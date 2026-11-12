@@ -1,650 +1,155 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#080f1d">
-<title>QUANTORA | Crypto Signal Scanner</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070b13">
+<title>QUANTORA — Crypto Trading Terminal</title>
+<meta name="description" content="QUANTORA premium crypto market terminal with live prices, interactive charts and strategy-based trading signals.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
 <style>
-:root{
-  --bg:#080f1d;
-  --panel:#111d30;
-  --line:#293b55;
-  --text:#edf4ff;
-  --muted:#91a4bf;
-  --gold:#e8bd68;
-  --green:#28d69a;
-  --red:#ff667d;
-}
-*{box-sizing:border-box}
-body{
- margin:0;
- background:radial-gradient(ellipse at top,#142641,#080f1d 65%);
- color:var(--text);
- font-family:Arial,sans-serif;
-}
-.container{max-width:1100px;margin:auto;padding:18px}
-header{
- display:flex;justify-content:space-between;
- align-items:center;gap:10px;margin-bottom:20px
-}
-.logo{font-size:28px;font-weight:900;letter-spacing:3px}
-.logo span{color:var(--gold)}
-.muted{color:var(--muted);font-size:12px}
-.badge{
- border:1px solid #52617b;border-radius:20px;
- padding:7px 12px;font-size:11px
-}
-.panel{
- background:var(--panel);
- border:1px solid var(--line);
- border-radius:15px;padding:17px;margin-bottom:14px
-}
-.controls{
- display:grid;grid-template-columns:1fr 1fr 1fr;
- gap:12px;align-items:end
-}
-label{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}
-select,button{
- width:100%;padding:12px;border-radius:9px;
- border:1px solid #344966;background:#0c1728;
- color:white;font-size:14px
-}
-button{
- background:var(--gold);color:#171109;
- border:0;font-weight:bold;cursor:pointer
-}
-button:disabled{opacity:.5}
-.stats{
- display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
- margin-bottom:14px
-}
-.stat,.level{
- background:#17253b;border:1px solid #293c57;
- padding:14px;border-radius:12px;min-width:0
-}
-.stat small,.level small{
- display:block;color:var(--muted);font-size:11px
-}
-.stat strong{
- display:block;font-size:19px;margin-top:8px;
- overflow-wrap:anywhere
-}
-.signal{
- display:flex;justify-content:space-between;
- align-items:center;gap:12px
-}
-.signal strong{font-size:25px}
-.buy{color:var(--green)}
-.sell{color:var(--red)}
-.wait{color:var(--gold)}
-.levels{
- display:grid;grid-template-columns:repeat(4,1fr);
- gap:9px;margin-top:17px
-}
-.level b{display:block;margin-top:8px;overflow-wrap:anywhere}
-.history{max-height:200px;overflow:auto}
-.history-item{
- border-bottom:1px solid var(--line);
- padding:10px 0;font-size:13px
-}
-.error{color:var(--red)}
-footer{font-size:12px;color:var(--muted);padding:12px 0 25px}
-@media(max-width:650px){
- .container{padding:12px}
- .logo{font-size:22px}
- .controls{grid-template-columns:1fr 1fr}
- .controls button{grid-column:1/-1}
- .stats{grid-template-columns:repeat(2,1fr)}
- .levels{grid-template-columns:repeat(2,1fr)}
- .signal{align-items:flex-start;flex-direction:column}
-}
+:root{--bg:#070b13;--panel:#0d1421;--panel2:#111b2b;--line:#1c2a3d;--text:#edf3fc;--muted:#8292a9;--gold:#e7bd70;--gold2:#b98a3f;--green:#31d6a0;--red:#ff647c;--blue:#6fa9ff;--mono:"DM Mono",monospace;--font:"Manrope",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#17263d 0,#070b13 55%);color:var(--text);font-family:var(--font);min-height:100vh}
+button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:auto;padding:22px 26px 34px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:5px 0 22px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px}.brand-mark{width:40px;height:40px;border:1px solid #826b43;border-radius:12px;display:grid;place-items:center;color:var(--gold);font-weight:800;font-size:19px;background:linear-gradient(145deg,#1b2636,#0c111b);box-shadow:0 0 28px #d5a34b18}.brand-name{font-size:21px;font-weight:800;letter-spacing:3px}.brand-name span{color:var(--gold)}.brand-sub{font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:2px}
+.top-right{display:flex;align-items:center;gap:12px}.live-pill{display:flex;align-items:center;gap:8px;border:1px solid #23533f;background:#0d211c;color:#8ce7bf;padding:8px 12px;border-radius:30px;font-size:10px;letter-spacing:1px;font-weight:800}.pulse{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 0 4px #31d6a01c}.clock{font:11px var(--mono);color:var(--muted)}
+.welcome{display:flex;justify-content:space-between;align-items:flex-end;margin:24px 0 18px;gap:12px}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:800}.welcome h1{font-size:25px;margin:6px 0 4px;letter-spacing:-.8px}.welcome p{font-size:12px;color:var(--muted);margin:0}.market-status{font-size:10px;color:var(--muted);text-align:right}
+.market-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.market-card{background:linear-gradient(145deg,#111c2c,#0c1320);border:1px solid var(--line);border-radius:14px;padding:15px 16px;min-width:0;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.market-card:hover,.market-card.active{border-color:#9a7845;transform:translateY(-1px);box-shadow:0 8px 28px #0005}.market-card.active:after{content:"";position:absolute;bottom:0;left:15px;right:15px;height:2px;background:var(--gold)}
+.coin-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.coin-id{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:800}.coin-icon{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#202b3c;color:var(--gold);font-size:11px;font-weight:800}.coin-symbol{color:var(--muted);font-size:10px;font-weight:600}.coin-price{font:600 19px var(--mono);margin:14px 0 5px;letter-spacing:-.7px}.coin-change{font:11px var(--mono)}.positive{color:var(--green)}.negative{color:var(--red)}.mini-note{font-size:9px;color:var(--muted);margin-top:10px}
+.workspace{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(290px,.85fr);gap:16px;align-items:stretch}
+.panel{background:linear-gradient(145deg,#0f1827,#0b121e);border:1px solid var(--line);border-radius:16px;min-width:0;overflow:hidden}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 18px;border-bottom:1px solid var(--line)}.panel-title{font-size:12px;font-weight:800;letter-spacing:.7px}.panel-caption{font-size:10px;color:var(--muted);margin-top:4px}
+.chart-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.selected-name{font-size:13px;font-weight:800}.selected-price{font:12px var(--mono);color:var(--gold)}
+.chart-tools{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.tf{background:#111d2d;color:var(--muted);border:1px solid transparent;border-radius:7px;padding:7px 9px;font-size:10px}.tf.active{background:#352b1d;color:var(--gold);border-color:#755c36}
+.chart-wrap{height:390px;padding:10px 10px 0;position:relative}.chart-placeholder{height:100%;display:grid;place-items:center;color:var(--muted);font-size:12px}
+.chart-foot{display:flex;justify-content:space-between;gap:10px;padding:9px 16px 13px;color:var(--muted);font-size:9px;border-top:1px solid #172336}
+.signal-panel{display:flex;flex-direction:column}.signal-main{padding:20px 18px 16px}.signal-label{font-size:10px;letter-spacing:1.6px;color:var(--muted);font-weight:800}.signal-state{display:flex;align-items:center;gap:10px;margin:13px 0 7px}.signal-state strong{font-size:27px;letter-spacing:1px;color:var(--gold)}.signal-dot{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 5px #e7bd7018}.signal-desc{font-size:11px;line-height:1.6;color:var(--muted);min-height:35px}
+.signal-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 18px 18px}.signal-level{background:#121e2e;border:1px solid #203047;border-radius:10px;padding:12px}.signal-level span{display:block;color:var(--muted);font-size:9px;letter-spacing:1px}.signal-level b{display:block;font:13px var(--mono);margin-top:7px}
+.strategy-note{margin:0 18px 18px;padding:12px;border:1px dashed #59482d;border-radius:10px;background:#1c1913;color:#c8b28b;font-size:10px;line-height:1.55}.strategy-note b{color:var(--gold)}
+.lower-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}.levels-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:15px}.metric{background:#111c2b;border:1px solid #1e2d42;border-radius:10px;padding:13px}.metric span{display:block;color:var(--muted);font-size:9px;letter-spacing:.8px}.metric b{display:block;font:14px var(--mono);margin-top:8px}.feed{padding:4px 17px 14px}.feed-empty{padding:20px 0;text-align:center;color:var(--muted);font-size:11px}.feed-item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #1b293b;font-size:10px}.feed-item:last-child{border:0}.feed-item small{color:var(--muted);display:block;margin-top:4px}.feed-side{font-weight:800}.muted{color:var(--muted)}
+.footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#62728a;font-size:9px;padding:20px 2px 0}
+@media(max-width:950px){.workspace{grid-template-columns:1fr}.signal-panel{min-height:0}.market-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.lower-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.app{padding:13px 12px 24px}.topbar{padding-bottom:15px}.brand-name{font-size:18px}.brand-mark{width:35px;height:35px}.clock{display:none}.welcome{margin:20px 0 14px}.welcome h1{font-size:21px}.market-strip{gap:8px}.market-card{padding:12px}.coin-price{font-size:16px}.panel-head{padding:14px}.chart-wrap{height:315px;padding:7px 4px 0}.chart-tools{width:100%}.chart-tools .tf{flex:1}.levels-row{grid-template-columns:repeat(2,1fr);padding:12px}.signal-main{padding:17px 15px}.signal-grid{padding:0 15px 15px}.strategy-note{margin:0 15px 15px}}
 </style>
 </head>
-
 <body>
-<div class="container">
-
-<header>
- <div>
-  <div class="logo">QUANT<span>ORA</span></div>
-  <div class="muted">SMART CRYPTO MARKET SCANNER</div>
- </div>
- <div class="badge">SIGNALS ONLY</div>
+<div class="app">
+<header class="topbar">
+ <div class="brand"><div class="brand-mark">Q</div><div><div class="brand-name">QUANT<span>ORA</span></div><div class="brand-sub">INTELLIGENT CRYPTO TERMINAL</div></div></div>
+ <div class="top-right"><div class="live-pill"><i class="pulse"></i> LIVE MARKET</div><div class="clock" id="clock">--:--:--</div></div>
 </header>
-
-<section class="panel">
- <div class="controls">
-  <div>
-   <label>SELECT MARKET</label>
-   <select id="symbol">
-    <option>BTCUSD</option>
-    <option>ETHUSD</option>
-    <option>SOLUSD</option>
-    <option>XRPUSD</option>
-   </select>
-  </div>
-
-  <div>
-   <label>TIMEFRAME</label>
-   <select id="timeframe">
-    <option value="4h">4 Hours</option>
-    <option value="2h">2 Hours</option>
-    <option value="1d">1 Day</option>
-   </select>
-  </div>
-
-  <button id="scanBtn">SCAN MARKET</button>
- </div>
-
- <div class="muted" id="status" style="margin-top:13px">
-  Connecting to Delta Exchange...
- </div>
+<section class="welcome"><div><div class="eyebrow">MARKET OVERVIEW</div><h1>Trade with clarity.</h1><p>Live market data, precision charts and your strategy-driven signals.</p></div><div class="market-status" id="connection">Connecting to Delta Exchange…</div></section>
+<section class="market-strip" id="marketStrip">
+ <div class="market-card"><div class="muted">Loading markets…</div></div>
 </section>
-
-<section class="stats">
- <div class="stat">
-  <small>LIVE LAST PRICE</small>
-  <strong id="livePrice">—</strong>
- </div>
- <div class="stat">
-  <small>LAST CLOSED CANDLE</small>
-  <strong id="candlePrice">—</strong>
- </div>
- <div class="stat">
-  <small>NEAREST SUPPORT</small>
-  <strong id="support">—</strong>
- </div>
- <div class="stat">
-  <small>NEAREST RESISTANCE</small>
-  <strong id="resistance">—</strong>
- </div>
- <div class="stat">
-  <small>SWING LOWS</small>
-  <strong id="swingLows">—</strong>
- </div>
- <div class="stat">
-  <small>SWING HIGHS</small>
-  <strong id="swingHighs">—</strong>
- </div>
+<main class="workspace">
+ <section class="panel">
+  <div class="panel-head"><div><div class="chart-meta"><span class="selected-name" id="chartSymbol">BTCUSD</span><span class="selected-price" id="chartPrice">—</span></div><div class="panel-caption">PRICE ACTION · DELTA EXCHANGE</div></div><div class="chart-tools" id="timeframes"><button class="tf" data-tf="1m">1m</button><button class="tf" data-tf="5m">5m</button><button class="tf" data-tf="15m">15m</button><button class="tf" data-tf="1h">1H</button><button class="tf active" data-tf="2h">2H</button><button class="tf" data-tf="4h">4H</button><button class="tf" data-tf="1d">1D</button></div></div>
+  <div class="chart-wrap" id="chart"></div>
+  <div class="chart-foot"><span>● Candlestick chart</span><span id="chartUpdated">Waiting for chart data</span><span>Prices in USD</span></div>
+ </section>
+ <aside class="panel signal-panel">
+  <div class="panel-head"><div><div class="panel-title">STRATEGY SIGNAL</div><div class="panel-caption">RULE-BASED MARKET ANALYSIS</div></div><span class="live-pill">ENGINE READY</span></div>
+  <div class="signal-main"><div class="signal-label">CURRENT SETUP</div><div class="signal-state"><i class="signal-dot"></i><strong id="signalState">WAIT</strong></div><div class="signal-desc" id="signalReason">Your custom strategy will be connected here. No trade signal is generated until its rules are configured.</div></div>
+  <div class="signal-grid"><div class="signal-level"><span>ENTRY PRICE</span><b id="entry">—</b></div><div class="signal-level"><span>STOP LOSS</span><b id="stop">—</b></div><div class="signal-level"><span>TARGET</span><b id="target">—</b></div><div class="signal-level"><span>RISK / REWARD</span><b id="rr">—</b></div></div>
+  <div class="strategy-note"><b>Strategy not configured</b><br>Tell me your exact entry, exit, confirmation and risk rules. QUANTORA will then calculate signals from closed candles only.</div>
+ </aside>
+</main>
+<section class="lower-grid">
+ <div class="panel"><div class="panel-head"><div><div class="panel-title">MARKET STRUCTURE</div><div class="panel-caption">AUTOMATIC SWING LEVELS · SELECTED MARKET</div></div></div><div class="levels-row"><div class="metric"><span>NEAREST SUPPORT</span><b id="support">—</b></div><div class="metric"><span>NEAREST RESISTANCE</span><b id="resistance">—</b></div><div class="metric"><span>SWING LOWS</span><b id="swingLows">—</b></div><div class="metric"><span>SWING HIGHS</span><b id="swingHighs">—</b></div></div></div>
+ <div class="panel"><div class="panel-head"><div><div class="panel-title">SIGNAL ACTIVITY</div><div class="panel-caption">YOUR RECENT STRATEGY ALERTS</div></div></div><div class="feed" id="signalFeed"><div class="feed-empty">No strategy signals yet. Your signal history will appear here.</div></div></div>
 </section>
-
-<section class="panel">
- <div class="signal">
-  <div>
-   <div class="muted">TRADING SIGNAL</div>
-   <strong id="signal" class="wait">WAITING</strong>
-   <div class="muted" id="reason">Waiting for market data...</div>
-  </div>
-  <div class="badge" id="rr">RR: —</div>
- </div>
-
- <div class="levels">
-  <div class="level">
-   <small>ENTRY</small>
-   <b id="entry">—</b>
-  </div>
-  <div class="level">
-   <small>STOP LOSS</small>
-   <b id="sl">—</b>
-  </div>
-  <div class="level">
-   <small>TARGET</small>
-   <b id="target">—</b>
-  </div>
-  <div class="level">
-   <small>RISK / REWARD</small>
-   <b id="risk">—</b>
-  </div>
- </div>
-</section>
-
-<section class="panel">
- <b>RECENT SIGNALS</b>
- <div class="history muted" id="history" style="margin-top:10px">
-  No signals yet.
- </div>
-</section>
-
-<footer>
- QUANTORA v0.1 · Delta Exchange public market data.
- Experimental technical analysis. Signals are not financial advice.
- No automatic orders are placed. Always verify prices and risk manually.
-</footer>
+<footer class="footer"><span>QUANTORA TERMINAL · VERSION 1.0</span><span>Market data by Delta Exchange public API · No orders are placed</span><span>For research and education only. Not financial advice.</span></footer>
 </div>
-
 <script>
 const API="https://api.india.delta.exchange";
-
+const markets=[
+ {symbol:"BTCUSD",name:"Bitcoin",ticker:"BTC",icon:"₿"},
+ {symbol:"ETHUSD",name:"Ethereum",ticker:"ETH",icon:"◆"},
+ {symbol:"SOLUSD",name:"Solana",ticker:"SOL",icon:"◎"},
+ {symbol:"XRPUSD",name:"XRP",ticker:"XRP",icon:"X"}
+];
+let selected="BTCUSD",timeframe="2h",chart=null,candleSeries=null,chartBusy=false;
+let marketData={};
 const $=id=>document.getElementById(id);
-
-let historyList=[];
-let lastSignal="";
-let scanning=false;
-let tickerLoading=false;
-
-function format(n){
- return Number.isFinite(n)
- ? n.toLocaleString("en-US",{maximumFractionDigits:4})
- : "—";
+const fmt=n=>Number.isFinite(Number(n))?Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:4}):"—";
+const tfSeconds={"1m":60,"5m":300,"15m":900,"1h":3600,"2h":7200,"4h":14400,"1d":86400};
+function setConnection(s,error=false){$("connection").textContent=s;$("connection").style.color=error?"#ff647c":"#8292a9"}
+function initChart(){
+ const el=$("chart");
+ if(!window.LightweightCharts){el.innerHTML='<div class="chart-placeholder">Chart library could not be loaded. Check your internet connection.</div>';return}
+ chart=LightweightCharts.createChart(el,{width:el.clientWidth,height:el.clientHeight,layout:{background:{type:"solid",color:"#0d1522"},textColor:"#8192a9",fontFamily:"DM Mono, monospace"},grid:{vertLines:{color:"#172437"},horzLines:{color:"#172437"}},rightPriceScale:{borderColor:"#26364b"},timeScale:{borderColor:"#26364b",timeVisible:true,secondsVisible:false},crosshair:{mode:LightweightCharts.CrosshairMode.Normal}});
+ candleSeries=chart.addCandlestickSeries({upColor:"#31d6a0",downColor:"#ff647c",borderUpColor:"#31d6a0",borderDownColor:"#ff647c",wickUpColor:"#31d6a0",wickDownColor:"#ff647c"});
+ new ResizeObserver(()=>{if(chart)chart.applyOptions({width:el.clientWidth,height:el.clientHeight})}).observe(el);
 }
-
-function setStatus(message,error=false){
- $("status").textContent=message;
- $("status").className="muted"+(error?" error":"");
+async function fetchTicker(m){
+ const r=await fetch(API+"/v2/tickers/"+encodeURIComponent(m),{cache:"no-store"});
+ if(!r.ok)throw Error("Ticker "+r.status);
+ const j=await r.json();const t=Array.isArray(j.result)?j.result[0]:j.result;
+ if(!t)throw Error("Ticker unavailable");
+ return {price:Number(t.close),change:Number(t.mark_change_24h??t.change_24h??t.change)};
 }
-
-// LIVE PRICE FROM DELTA
-
-async function getLivePrice(){
- if(tickerLoading)return;
- tickerLoading=true;
-
+function renderMarkets(){
+ $("marketStrip").innerHTML=markets.map(m=>{
+  const d=marketData[m.symbol]||{},price=fmt(d.price),change=Number(d.change);
+  const ch=Number.isFinite(change)?(change>0?"+":"")+change.toFixed(2)+"%":"Live";
+  return '<article class="market-card '+(selected===m.symbol?"active":"")+'" data-symbol="'+m.symbol+'"><div class="coin-head"><div class="coin-id"><span class="coin-icon">'+m.icon+'</span><span>'+m.name+' <span class="coin-symbol">'+m.ticker+'</span></span></div></div><div class="coin-price">'+price+'</div><div class="coin-change '+(change>=0?"positive":"negative")+'">'+ch+'</div><div class="mini-note">DELTA · LIVE PRICE</div></article>';
+ }).join("");
+ document.querySelectorAll(".market-card[data-symbol]").forEach(el=>el.addEventListener("click",()=>selectMarket(el.dataset.symbol)));
+}
+async function refreshTickers(){
+ const results=await Promise.allSettled(markets.map(async m=>[m.symbol,await fetchTicker(m.symbol)]));
+ let ok=0;
+ results.forEach(x=>{if(x.status==="fulfilled"){marketData[x.value[0]]=x.value[1];ok++}});
+ renderMarkets();
+ const d=marketData[selected];if(d){$("chartPrice").textContent=fmt(d.price);$("chartPrice").style.color="#e7bd70"}
+ setConnection(ok?("Live · "+ok+"/"+markets.length+" markets connected"):"Market data unavailable",!ok);
+}
+async function fetchCandles(){
+ const sec=tfSeconds[timeframe],end=Math.floor(Date.now()/1000),start=end-sec*240;
+ const url=API+"/v2/history/candles?resolution="+timeframe+"&symbol="+encodeURIComponent(selected)+"&start="+start+"&end="+end;
+ const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("Candle API "+r.status);
+ const j=await r.json();if(j.success===false)throw Error("Candle data request failed");
+ return (j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time).filter((c,i,a)=>!i||c.time!==a[i-1].time);
+}
+async function refreshChart(){
+ if(chartBusy||!candleSeries)return;chartBusy=true;
  try{
-  const symbol=$("symbol").value;
-
-  const response=await fetch(
-   API+"/v2/tickers/"+encodeURIComponent(symbol),
-   {cache:"no-store"}
-  );
-
-  if(!response.ok)throw Error("Ticker API error");
-
-  const json=await response.json();
-
-  const ticker=Array.isArray(json.result)
-   ?json.result[0]:json.result;
-
-  const price=Number(ticker?.close);
-
-  if(!Number.isFinite(price)||price<=0)
-   throw Error("Invalid live price");
-
-  $("livePrice").textContent=format(price);
-  $("livePrice").className="buy";
-
- }catch(error){
-  $("livePrice").textContent="Unavailable";
-  $("livePrice").className="error";
-  console.error(error);
- }finally{
-  tickerLoading=false;
- }
+  const candles=await fetchCandles();if(!candles.length)throw Error("No candle data");
+  const sec=tfSeconds[timeframe],now=Math.floor(Date.now()/1000);
+  const closed=candles.filter(c=>c.time+sec<=now);
+  candleSeries.setData(closed.map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})));
+  chart.timeScale().fitContent();$("chartUpdated").textContent="Updated "+new Date().toLocaleTimeString();
+  const last=closed[closed.length-1];if(last){$("chartPrice").textContent=fmt(marketData[selected]?.price??last.close)}
+  updateStructure(closed);
+ }catch(e){$("chartUpdated").textContent="Chart unavailable · "+e.message;console.error(e)}
+ finally{chartBusy=false}
 }
-
-// HISTORICAL CANDLES
-
-async function getCandles(){
-
- const symbol=$("symbol").value;
- const tf=$("timeframe").value;
-
- const seconds={
-  "2h":7200,
-  "4h":14400,
-  "1d":86400
- }[tf];
-
- const end=Math.floor(Date.now()/1000);
- const start=end-seconds*450;
-
- const url=API+"/v2/history/candles?"+
-  "resolution="+tf+
-  "&symbol="+encodeURIComponent(symbol)+
-  "&start="+start+
-  "&end="+end;
-
- const response=await fetch(url);
-
- if(!response.ok)throw Error("Candle API error");
-
- const json=await response.json();
-
- if(json.success===false)
-  throw Error("Delta candle response failed");
-
- const candles=(json.result||[])
-  .map(c=>({
-   time:Number(c.time),
-   open:Number(c.open),
-   high:Number(c.high),
-   low:Number(c.low),
-   close:Number(c.close)
-  }))
-  .filter(c=>[
-   c.time,c.open,c.high,c.low,c.close
-  ].every(Number.isFinite))
-  .sort((a,b)=>a.time-b.time);
-
- // Exclude currently forming candle
- const closed=candles.filter(
-  c=>c.time+seconds<=end
- );
-
- if(closed.length<30)
-  throw Error("Not enough historical candles");
-
- return closed;
-}
-
-// AVERAGE TRUE RANGE
-
-function calculateATR(candles){
-
- let total=0;
- let count=0;
-
- const start=Math.max(1,candles.length-14);
-
- for(let i=start;i<candles.length;i++){
-
-  const current=candles[i];
-  const previous=candles[i-1];
-
-  const tr=Math.max(
-   current.high-current.low,
-   Math.abs(current.high-previous.close),
-   Math.abs(current.low-previous.close)
-  );
-
-  total+=tr;
-  count++;
+function updateStructure(c){
+ const highs=[],lows=[];
+ for(let i=2;i<c.length-2;i++){
+  if(c[i].high>c[i-1].high&&c[i].high>c[i-2].high&&c[i].high>=c[i+1].high&&c[i].high>=c[i+2].high)highs.push(c[i].high);
+  if(c[i].low<c[i-1].low&&c[i].low<c[i-2].low&&c[i].low<=c[i+1].low&&c[i].low<=c[i+2].low)lows.push(c[i].low);
  }
-
- return count?total/count:0;
+ const price=c[c.length-1]?.close;
+ const s=lows.filter(x=>x<=price).sort((a,b)=>b-a)[0],r=highs.filter(x=>x>=price).sort((a,b)=>a-b)[0];
+ $("support").textContent=s?fmt(s):"—";$("resistance").textContent=r?fmt(r):"—";$("swingLows").textContent=lows.length;$("swingHighs").textContent=highs.length;
 }
-
-// AUTOMATIC SWING DETECTION
-
-function detectSwings(candles){
-
- const highs=[];
- const lows=[];
-
- for(let i=2;i<candles.length-2;i++){
-
-  const c=candles[i];
-
-  if(
-   c.high>candles[i-1].high &&
-   c.high>candles[i-2].high &&
-   c.high>=candles[i+1].high &&
-   c.high>=candles[i+2].high
-  ){
-   highs.push({index:i,price:c.high});
-  }
-
-  if(
-   c.low<candles[i-1].low &&
-   c.low<candles[i-2].low &&
-   c.low<=candles[i+1].low &&
-   c.low<=candles[i+2].low
-  ){
-   lows.push({index:i,price:c.low});
-  }
- }
-
- return {highs,lows};
+async function selectMarket(s){selected=s;renderMarkets();$("chartSymbol").textContent=s;$("chartUpdated").textContent="Loading "+s+"…";await refreshChart();const d=marketData[s];if(d)$("chartPrice").textContent=fmt(d.price)}
+document.querySelectorAll(".tf").forEach(b=>b.addEventListener("click",()=>{timeframe=b.dataset.tf;document.querySelectorAll(".tf").forEach(x=>x.classList.toggle("active",x===b));refreshChart()}));
+function tickClock(){$("clock").textContent=new Date().toLocaleTimeString()}
+async function start(){
+ tickClock();setInterval(tickClock,1000);initChart();
+ await Promise.allSettled([refreshTickers(),refreshChart()]);
+ setInterval(refreshTickers,10000);setInterval(refreshChart,30000);
 }
-
-// STRATEGY ENGINE
-
-function analyze(candles){
-
- const current=candles.at(-1);
- const previous=candles.at(-2);
-
- const atr=calculateATR(candles);
-
- const swings=detectSwings(candles);
-
- const support=swings.lows
-  .filter(x=>x.price<=current.close)
-  .sort((a,b)=>b.price-a.price)[0];
-
- const resistance=swings.highs
-  .filter(x=>x.price>=current.close)
-  .sort((a,b)=>a.price-b.price)[0];
-
- const tolerance=Math.max(
-  atr*0.35,
-  current.close*0.002
- );
-
- const nearSupport=support &&
-  Math.abs(current.low-support.price)<=tolerance &&
-  current.close>=support.price-tolerance;
-
- const nearResistance=resistance &&
-  Math.abs(current.high-resistance.price)<=tolerance &&
-  current.close<=resistance.price+tolerance;
-
- const twoGreen=
-  previous.close>previous.open &&
-  current.close>current.open;
-
- const twoRed=
-  previous.close<previous.open &&
-  current.close<current.open;
-
- let side=null;
- let sl=null;
- let tp=null;
- let rr=null;
- let reason="No confirmed setup. Waiting.";
-
- if(nearSupport && twoGreen){
-
-  side="BUY";
-
-  sl=Math.min(
-   support.price,
-   previous.low,
-   current.low
-  )-atr*0.15;
-
-  const risk=current.close-sl;
-
-  if(risk>0){
-
-   const minimumTarget=current.close+2*risk;
-
-   const nextResistance=swings.highs
-    .filter(x=>x.price>current.close)
-    .sort((a,b)=>a.price-b.price)[0];
-
-   tp=nextResistance &&
-      nextResistance.price>=minimumTarget
-      ?nextResistance.price
-      :minimumTarget;
-
-   rr=(tp-current.close)/risk;
-  }
-
-  reason="Support retest + 2 consecutive green candles.";
- }
-
- else if(nearResistance && twoRed){
-
-  side="SELL";
-
-  sl=Math.max(
-   resistance.price,
-   previous.high,
-   current.high
-  )+atr*0.15;
-
-  const risk=sl-current.close;
-
-  if(risk>0){
-
-   const minimumTarget=current.close-2*risk;
-
-   const nextSupport=swings.lows
-    .filter(x=>x.price<current.close)
-    .sort((a,b)=>b.price-a.price)[0];
-
-   tp=nextSupport &&
-      nextSupport.price<=minimumTarget
-      ?nextSupport.price
-      :minimumTarget;
-
-   rr=(current.close-tp)/risk;
-  }
-
-  reason="Resistance retest + 2 consecutive red candles.";
- }
-
- return {
-  side,sl,tp,rr,reason,current,
-  support,resistance,swings
- };
-}
-
-// DISPLAY RESULTS
-
-function display(result){
-
- $("candlePrice").textContent=format(result.current.close);
-
- $("support").textContent=
-  result.support?format(result.support.price):"—";
-
- $("resistance").textContent=
-  result.resistance?format(result.resistance.price):"—";
-
- $("swingLows").textContent=result.swings.lows.length;
- $("swingHighs").textContent=result.swings.highs.length;
-
- const signal=$("signal");
-
- signal.textContent=result.side||"WAIT";
- signal.className=result.side==="BUY"
-  ?"buy":result.side==="SELL"?"sell":"wait";
-
- $("reason").textContent=result.reason;
-
- $("entry").textContent=result.side
-  ?format(result.current.close):"—";
-
- $("sl").textContent=result.side
-  ?format(result.sl):"—";
-
- $("target").textContent=result.side
-  ?format(result.tp):"—";
-
- $("risk").textContent=result.rr
-  ?format(result.rr)+"R":"—";
-
- $("rr").textContent=result.side
-  ?"RR: "+format(result.rr)+"R":"RR: —";
-
- // One signal per completed candle
-
- if(result.side){
-
-  const key=[
-   $("symbol").value,
-   $("timeframe").value,
-   result.side,
-   result.current.time
-  ].join("-");
-
-  if(key!==lastSignal){
-
-   lastSignal=key;
-
-   historyList.unshift({
-    side:result.side,
-    symbol:$("symbol").value,
-    price:result.current.close,
-    time:new Date(result.current.time*1000).toLocaleString()
-   });
-
-   historyList=historyList.slice(0,20);
-
-   $("history").innerHTML=historyList.map(x=>`
-    <div class="history-item">
-     <b class="${x.side==="BUY"?"buy":"sell"}">${x.side}</b>
-     · ${x.symbol}
-     · ${format(x.price)}
-     <div class="muted">${x.time}</div>
-    </div>
-   `).join("");
-  }
- }
-}
-
-// MAIN SCANNER
-
-async function scanMarket(){
-
- if(scanning)return;
-
- scanning=true;
- $("scanBtn").disabled=true;
-
- setStatus("Fetching Delta historical candles...");
-
- try{
-
-  const candles=await getCandles();
-
-  const result=analyze(candles);
-
-  display(result);
-
-  setStatus(
-   "Connected · "+candles.length+
-   " closed candles · "+$("symbol").value
-  );
-
- }catch(error){
-
-  setStatus("DATA ERROR: "+error.message,true);
-
-  $("signal").textContent="DATA ERROR";
-  $("signal").className="wait";
-  $("reason").textContent="No signal generated. Check connection.";
-
-  console.error(error);
-
- }finally{
-
-  scanning=false;
-  $("scanBtn").disabled=false;
- }
-}
-
-// EVENTS
-
-$("scanBtn").addEventListener("click",()=>{
- scanMarket();
- getLivePrice();
-});
-
-$("symbol").addEventListener("change",()=>{
- lastSignal="";
- scanMarket();
- getLivePrice();
-});
-
-$("timeframe").addEventListener("change",()=>{
- lastSignal="";
- scanMarket();
-});
-
-// START
-
-(async()=>{
- await scanMarket();
- await getLivePrice();
-
- setInterval(scanMarket,60000);
- setInterval(getLivePrice,10000);
-})();
+start();
 </script>
 </body>
 </html>
