@@ -413,10 +413,10 @@ function scanLiquidity(candles,pdh,pdl){
   if(pending?.stage==="BREAK"){
    if(pending.side==="BUY"){
     if(c.low<pdl){pending=null;activity="BUY setup invalidated: price broke below PDL before trigger. Waiting for a fresh sweep.";continue}
-    if(c.close>pending.level&&c.close<pdh){signal={side:"BUY",entry:c.close,target:pdh,level:pending.level,time:c.time,sweep:pending.sweep};activity="BUY confirmed: 15m candle closed above the confirmation candle high.";break}
+    if(c.close>pending.level&&c.close<pdh){signal={side:"BUY",entry:c.close,target:pdh,level:pending.level,time:c.time,sweep:pending.sweep};activity="BUY confirmed: 15m candle closed above the confirmation candle high.";continue}
    }else{
     if(c.high>pdh){pending=null;activity="SELL setup invalidated: price broke above PDH before trigger. Waiting for a fresh sweep.";continue}
-    if(c.close<pending.level&&c.close>pdl){signal={side:"SELL",entry:c.close,target:pdl,level:pending.level,time:c.time,sweep:pending.sweep};activity="SELL confirmed: 15m candle closed below the confirmation candle low.";break}
+    if(c.close<pending.level&&c.close>pdl){signal={side:"SELL",entry:c.close,target:pdl,level:pending.level,time:c.time,sweep:pending.sweep};activity="SELL confirmed: 15m candle closed below the confirmation candle low.";continue}
    }
    continue;
   }
@@ -473,11 +473,21 @@ async function refreshLiquidity(reset=false){
   }
   if(reset||!liqChart._liqFitted){liqChart.timeScale().fitContent();liqChart._liqFitted=true}
   clearLiquidityLines();addLiquidityLine(pdh,"#e7bd70","PREV DAY HIGH");addLiquidityLine(pdl,"#e7bd70","PREV DAY LOW");
-  const result=scanLiquidity(today,pdh,pdl),sig=result.signal,pending=result.pending;
+  const result=scanLiquidity(today,pdh,pdl);
+  const live=marketData[liqSelected]?.price;
+  // Never display a BUY while the live market is still below PDL, or a SELL while above PDH.
+  // This also clears an older historical signal if price has since broken back outside the range.
+  if(result.signal?.side==="BUY"&&Number.isFinite(live)&&live<pdl){
+   result.signal=null;result.pending=null;
+   result.activity="BUY blocked: live price is still below previous-day low. A closed 15m candle must reclaim and close back above PDL before any BUY setup.";
+  }else if(result.signal?.side==="SELL"&&Number.isFinite(live)&&live>pdh){
+   result.signal=null;result.pending=null;
+   result.activity="SELL blocked: live price is still above previous-day high. A closed 15m candle must reclaim and close back below PDH before any SELL setup.";
+  }
+  const sig=result.signal,pending=result.pending;
   const atr=calculateLiquidityATR(closed,14),buffer=atr==null?null:atr*0.25;
   if(sig&&buffer!=null)sig.stop=sig.side==="BUY"?pdl-buffer:pdh+buffer;
   $("liqPDH").textContent=fmt(pdh);$("liqPDL").textContent=fmt(pdl);
-  const live=marketData[liqSelected]?.price;
   $("liqPrice").textContent=fmt(live??closed.at(-1)?.close);
   $("liqSymbol").textContent=liqSelected;
    $("liqSource").textContent="ALL MARKETS · DELTA EXCHANGE";
