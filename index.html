@@ -399,43 +399,56 @@ function calculateLiquidityATR(candles,period=14){
  for(let i=period;i<trs.length;i++)atr=((atr*(period-1))+trs[i])/period;
  return atr;
 }
-function scanLiquidity(candles,pdh,pdl){
- let pending=null,signal=null,activity="Waiting for a previous-day liquidity sweep.";
+function scanLiquidity(candles,pdh,pdl,buffer){
+ let pending=null,signal=null,activity="Waiting for a previous-day liquidity sweep.",dailyLock=false;
+ const buySL=pdl-(Number.isFinite(buffer)?buffer:0),sellSL=pdh+(Number.isFinite(buffer)?buffer:0);
  for(let i=0;i<candles.length;i++){
   const c=candles[i];
   if(signal){
-   if(signal.side==="BUY"&&c.time>signal.time&&c.low<pdl){signal=null;pending=null;activity="BUY invalidated: price broke back below previous-day low after entry. Waiting for a fresh sweep.";continue}
-   if(signal.side==="SELL"&&c.time>signal.time&&c.high>pdh){signal=null;pending=null;activity="SELL invalidated: price broke back above previous-day high after entry. Waiting for a fresh sweep.";continue}
-   if(signal.side==="BUY"&&c.time>signal.time&&c.high>=pdh){signal.targetHit=true;activity="BUY target (previous day high) reached.";break}
-   if(signal.side==="SELL"&&c.time>signal.time&&c.low<=pdl){signal.targetHit=true;activity="SELL target (previous day low) reached.";break}
+   if(signal.side==="BUY"&&c.time>signal.time){
+    // Stop takes priority if one candle touches both stop and target.
+    if(c.low<=signal.stop){signal.slHit=true;dailyLock=true;activity="SL HIT · ONLY ONE TRADE IN A DAY. No more signals until the next trading day.";break}
+    if(c.high>=pdh){signal.targetHit=true;activity="BUY target (previous day high) reached.";break}
+   }else if(signal.side==="SELL"&&c.time>signal.time){
+    if(c.high>=signal.stop){signal.slHit=true;dailyLock=true;activity="SL HIT · ONLY ONE TRADE IN A DAY. No more signals until the next trading day.";break}
+    if(c.low<=pdl){signal.targetHit=true;activity="SELL target (previous day low) reached.";break}
+   }
    continue;
   }
+  if(dailyLock)break;
   if(pending?.stage==="BREAK"){
    if(pending.side==="BUY"){
-    if(c.low<pdl){pending=null;activity="BUY setup invalidated: price broke below PDL before trigger. Waiting for a fresh sweep.";continue}
-    if(c.close>pending.level&&c.close<pdh){signal={side:"BUY",entry:c.close,target:pdh,level:pending.level,time:c.time,sweep:pending.sweep};activity="BUY confirmed: 15m candle closed above the confirmation candle high.";continue}
+    // Trigger candle must stay above PDL and CLOSE above the confirmation candle high.
+    if(c.low<=pdl){pending=null;activity="BUY setup cancelled: candle touched PDL again before breakout.";continue}
+    if(c.close>pending.level&&c.close<pdh){
+     signal={side:"BUY",entry:c.close,target:pdh,stop:buySL,level:pending.level,time:c.time,sweep:pending.sweep};activity="BUY confirmed: candle closed above the confirmation candle high. SL is below PDL with buffer.";continue;
+    }
    }else{
-    if(c.high>pdh){pending=null;activity="SELL setup invalidated: price broke above PDH before trigger. Waiting for a fresh sweep.";continue}
-    if(c.close<pending.level&&c.close>pdl){signal={side:"SELL",entry:c.close,target:pdl,level:pending.level,time:c.time,sweep:pending.sweep};activity="SELL confirmed: 15m candle closed below the confirmation candle low.";continue}
+    if(c.high>=pdh){pending=null;activity="SELL setup cancelled: candle touched PDH again before breakdown.";continue}
+    if(c.close<pending.level&&c.close>pdl){
+     signal={side:"SELL",entry:c.close,target:pdl,stop:sellSL,level:pending.level,time:c.time,sweep:pending.sweep};activity="SELL confirmed: candle closed below the confirmation candle low. SL is above PDH with buffer.";continue;
+    }
    }
    continue;
   }
   if(pending?.stage==="CONFIRM"){
    if(pending.side==="BUY"){
-    if(c.low>pdl&&c.close>pdl){pending={side:"BUY",stage:"BREAK",level:c.high,sweep:pending.sweep,confirm:c};activity="Low swept and reclaimed. Confirmation candle formed; waiting for its high to break on candle close."}
-    else if(c.low<pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="Fresh PDL sweep detected; checking reclaim."}
-    else{pending=null;activity="BUY setup invalidated before confirmation; waiting for another sweep."}
+    // Re-entry is already complete; next candle must not touch PDL.
+    if(c.low>pdl&&c.close>pdl){pending={side:"BUY",stage:"BREAK",level:c.high,sweep:pending.sweep,confirm:c};activity="Re-entry confirmed. A clean candle did not touch PDL; waiting for its high to break and close above."}
+    else if(c.low<=pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="Another PDL sweep and reclaim. Waiting for a clean candle that stays above PDL."}
+    else{pending=null;activity="BUY setup cancelled: price did not hold back inside above PDL."}
    }else{
-    if(c.high<pdh&&c.close<pdh){pending={side:"SELL",stage:"BREAK",level:c.low,sweep:pending.sweep,confirm:c};activity="High swept and rejected. Confirmation candle formed; waiting for its low to break on candle close."}
-    else if(c.high>pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="Fresh PDH sweep detected; checking rejection."}
-    else{pending=null;activity="SELL setup invalidated before confirmation; waiting for another sweep."}
+    if(c.high<pdh&&c.close<pdh){pending={side:"SELL",stage:"BREAK",level:c.low,sweep:pending.sweep,confirm:c};activity="Re-entry confirmed. A clean candle did not touch PDH; waiting for its low to break and close below."}
+    else if(c.high>=pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="Another PDH sweep and rejection. Waiting for a clean candle that stays below PDH."}
+    else{pending=null;activity="SELL setup cancelled: price did not hold back inside below PDH."}
    }
    continue;
   }
-  if(c.low<pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="Valid BUY sweep: candle wicked below PDL and closed back above it. Waiting for a clean confirmation candle."}
-  else if(c.high>pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="Valid SELL sweep: candle wicked above PDH and closed back below it. Waiting for a clean confirmation candle."}
+  // First step: sweep beyond the previous-day level and close back inside.
+  if(c.low<pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="PDL swept and candle closed back inside. Waiting for a separate candle that does not touch PDL."}
+  else if(c.high>pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="PDH swept and candle closed back inside. Waiting for a separate candle that does not touch PDH."}
  }
- return {pending,signal,activity};
+ return {pending,signal,activity,dailyLock};
 }
 async function refreshLiquidity(reset=false){
  if(liqBusy)return;
@@ -473,7 +486,8 @@ async function refreshLiquidity(reset=false){
   }
   if(reset||!liqChart._liqFitted){liqChart.timeScale().fitContent();liqChart._liqFitted=true}
   clearLiquidityLines();addLiquidityLine(pdh,"#e7bd70","PREV DAY HIGH");addLiquidityLine(pdl,"#e7bd70","PREV DAY LOW");
-  const result=scanLiquidity(today,pdh,pdl);
+  const atr=calculateLiquidityATR(closed,14),buffer=atr==null?0:atr*0.25;
+  const result=scanLiquidity(today,pdh,pdl,buffer);
   const live=marketData[liqSelected]?.price;
   // Never display a BUY while the live market is still below PDL, or a SELL while above PDH.
   // This also clears an older historical signal if price has since broken back outside the range.
@@ -485,18 +499,16 @@ async function refreshLiquidity(reset=false){
    result.activity="SELL blocked: live price is still above previous-day high. A closed 15m candle must reclaim and close back below PDH before any SELL setup.";
   }
   const sig=result.signal,pending=result.pending;
-  const atr=calculateLiquidityATR(closed,14),buffer=atr==null?null:atr*0.25;
-  if(sig&&buffer!=null)sig.stop=sig.side==="BUY"?pdl-buffer:pdh+buffer;
   $("liqPDH").textContent=fmt(pdh);$("liqPDL").textContent=fmt(pdl);
   $("liqPrice").textContent=fmt(live??closed.at(-1)?.close);
   $("liqSymbol").textContent=liqSelected;
    $("liqSource").textContent="ALL MARKETS · DELTA EXCHANGE";
   $("liqEntry").textContent=sig?fmt(sig.entry):"—";
-  $("liqStop").textContent=sig&&sig.stop!=null?fmt(sig.stop):atr==null?"ATR data unavailable":"—";
+  $("liqStop").textContent=sig&&sig.stop!=null?fmt(sig.stop):fmt(sig?.stop);
   $("liqTarget").textContent=sig?fmt(sig.target):"—";
   $("liqTrigger").textContent=pending?.stage==="BREAK"?fmt(pending.level):sig?fmt(sig.level):"—";
   $("liqSignal").className=sig?(sig.side==="BUY"?"positive-signal":"negative-signal"):"";
-  $("liqSignal").textContent=sig?(sig.targetHit?sig.side+" TARGET HIT":sig.side):pending?(pending.side+" SETUP"):"WAIT";
+  $("liqSignal").textContent=sig?(sig.slHit?"SL HIT · ONLY ONE TRADE IN A DAY":sig.targetHit?sig.side+" TARGET HIT":sig.side):pending?(pending.side+" SETUP"):"WAIT";
   $("liqDot").style.background=sig?(sig.side==="BUY"?"#31d6a0":"#ff647c"):"#e7bd70";
   $("liqMessage").textContent="["+(liqDayMode==="UTC"?"05:30 IST UTC DAY":"00:00 IST INDIA DAY")+"] "+result.activity;
   if(pending?.stage==="BREAK")addLiquidityLine(pending.level,"#6fa9ff","TRIGGER LEVEL",1);
