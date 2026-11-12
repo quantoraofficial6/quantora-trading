@@ -268,7 +268,7 @@ function updateStructure(c){
  $("support").textContent=s?fmt(s):"—";$("resistance").textContent=r?fmt(r):"—";$("swingLows").textContent=lows.length;$("swingHighs").textContent=highs.length;
 }
 async function selectMarket(s){selected=s;chartHasFit=false;renderMarkets();$("chartSymbol").textContent=s;$("chartUpdated").textContent="Loading "+s+"…";await refreshTickers();await refreshChart();const d=marketData[s];if(d)$("chartPrice").textContent=fmt(d.price)}
-document.querySelectorAll(".tf").forEach(b=>b.addEventListener("click",()=>{timeframe=b.dataset.tf;document.querySelectorAll(".tf").forEach(x=>x.classList.toggle("active",x===b));refreshChart()}));
+document.querySelectorAll(".tf").forEach(b=>b.addEventListener("click",()=>{timeframe=b.dataset.tf;chartHasFit=false;document.querySelectorAll(".tf").forEach(x=>x.classList.toggle("active",x===b));refreshChart()}));
 function tickClock(){$("clock").textContent=new Date().toLocaleTimeString()}
 $("refreshPrices")?.addEventListener("click",()=>refreshTickers());
 async function start(){
