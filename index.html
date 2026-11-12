@@ -94,7 +94,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
    <div class="panel liquidity-chart-panel">
     <div class="panel-head"><div><div class="chart-meta"><span class="selected-name" id="liqSymbol">BTCUSD</span><span class="selected-price" id="liqPrice">—</span></div><div class="panel-caption">15M CANDLE CHART · PREVIOUS DAY LEVELS · UTC DAY</div></div><span class="badge-level">15 MIN</span></div>
     <div class="chart-wrap liquidity-chart" id="liquidityChart"></div>
-    <div class="chart-foot"><span>Gold: previous day levels</span><span id="liqUpdated">Loading chart…</span><span>15m candles</span></div>
+    <div class="chart-foot"><span id="liqSource">BTC: Bitstamp · others: Delta</span><span id="liqUpdated">Loading chart…</span><span>15m candles</span></div>
    </div>
    <aside class="panel liquidity-signal">
     <div class="panel-head"><div><div class="panel-title">LIQUIDITY SIGNAL</div><div class="panel-caption">SELECTED MARKET</div></div><span class="live-pill">15M ENGINE</span></div>
@@ -359,10 +359,21 @@ function clearLiquidityLines(){liqLines.forEach(x=>{try{liqSeries.removePriceLin
 function addLiquidityLine(price,color,title,style=2){if(Number.isFinite(price)&&liqSeries)liqLines.push(liqSeries.createPriceLine({price,color,lineWidth:1,lineStyle:style,axisLabelVisible:true,title}));}
 async function fetchLiquidityCandles(){
  const bounds=istDayBounds(liqDayMode),start=bounds.previousStart-900,end=bounds.now;
- const url=API+"/v2/history/candles?resolution=15m&symbol="+encodeURIComponent(liqSelected)+"&start="+start+"&end="+end;
- const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("15m candle API HTTP "+r.status);
- const j=await r.json();if(j.success===false)throw Error("15m candle data unavailable");
- const rows=(j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time);
+ let raw=[];
+ if(liqSelected==="BTCUSD"){
+  // TradingView symbol in user's chart is BTCUSD on Bitstamp. Use the same venue for BTC candles/PDH/PDL.
+  const url="https://www.bitstamp.net/api/v2/ohlc/btcusd/?step=900&limit=300&start="+start+"&end="+end;
+  const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("Bitstamp 15m candle API HTTP "+r.status);
+  const j=await r.json();raw=j?.data?.ohlc||[];
+  if(!raw.length)throw Error("Bitstamp BTCUSD 15m candle data unavailable");
+  raw=raw.map(c=>({time:Number(c.timestamp),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}));
+ }else{
+  const url=API+"/v2/history/candles?resolution=15m&symbol="+encodeURIComponent(liqSelected)+"&start="+start+"&end="+end;
+  const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("15m candle API HTTP "+r.status);
+  const j=await r.json();if(j.success===false)throw Error("15m candle data unavailable");
+  raw=(j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}));
+ }
+ const rows=raw.filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time);
  return {rows:rows.filter((c,i,a)=>!i||c.time!==a[i-1].time),bounds};
 }
 function calculateLiquidityATR(candles,period=14){
@@ -432,6 +443,7 @@ async function refreshLiquidity(reset=false){
   const live=marketData[liqSelected]?.price;
   $("liqPrice").textContent=fmt(live??closed.at(-1)?.close);
   $("liqSymbol").textContent=liqSelected;
+   $("liqSource").textContent=liqSelected==="BTCUSD"?"BTCUSD · BITSTAMP":"Other markets · DELTA EXCHANGE";
   $("liqEntry").textContent=sig?fmt(sig.entry):"—";
   $("liqStop").textContent=sig&&sig.stop!=null?fmt(sig.stop):atr==null?"ATR data unavailable":"—";
   $("liqTarget").textContent=sig?fmt(sig.target):"—";
