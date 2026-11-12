@@ -377,20 +377,13 @@ function clearLiquidityLines(){liqLines.forEach(x=>{try{liqSeries.removePriceLin
 function addLiquidityLine(price,color,title,style=2){if(Number.isFinite(price)&&liqSeries)liqLines.push(liqSeries.createPriceLine({price,color,lineWidth:1,lineStyle:style,axisLabelVisible:true,title}));}
 async function fetchLiquidityCandles(){
  const bounds=istDayBounds(liqDayMode),start=bounds.previousStart-900,end=bounds.now;
- let raw=[];
- if(liqSelected==="BTCUSD"){
-  // TradingView symbol in user's chart is BTCUSD on Bitstamp. Use the same venue for BTC candles/PDH/PDL.
-  const url="https://www.bitstamp.net/api/v2/ohlc/btcusd/?step=900&limit=300&start="+start+"&end="+end;
-  const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("Bitstamp 15m candle API HTTP "+r.status);
-  const j=await r.json();raw=j?.data?.ohlc||[];
-  if(!raw.length)throw Error("Bitstamp BTCUSD 15m candle data unavailable");
-  raw=raw.map(c=>({time:Number(c.timestamp),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}));
- }else{
-  const url=API+"/v2/history/candles?resolution=15m&symbol="+encodeURIComponent(liqSelected)+"&start="+start+"&end="+end;
-  const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("15m candle API HTTP "+r.status);
-  const j=await r.json();if(j.success===false)throw Error("15m candle data unavailable");
-  raw=(j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}));
- }
+ const url=API+"/v2/history/candles?resolution=15m&symbol="+encodeURIComponent(liqSelected)+"&start="+start+"&end="+end;
+ const r=await fetch(url,{cache:"no-store",headers:{Accept:"application/json"}});
+ if(!r.ok)throw Error("Delta Exchange 15m candle API HTTP "+r.status);
+ const j=await r.json();
+ if(j.success===false)throw Error(j.error||"Delta Exchange 15m candle data unavailable");
+ const raw=(j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}));
+ if(!raw.length)throw Error("Delta Exchange returned no 15m candles for "+liqSelected);
  const rows=raw.filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time);
  return {rows:rows.filter((c,i,a)=>!i||c.time!==a[i-1].time),bounds};
 }
@@ -454,7 +447,14 @@ async function refreshLiquidity(reset=false){
   if(!prev.length)throw Error("Previous day candles not available yet.");
   const pdh=Math.max(...prev.map(c=>c.high)),pdl=Math.min(...prev.map(c=>c.low));
   liqSeries.setData(closed.map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})));
-  if(forming)liqSeries.update({time:forming.time,open:forming.open,high:forming.high,low:forming.low,close:forming.close});
+  // Keep the displayed in-progress candle aligned with Delta's live ticker price.
+  const live=marketData[liqSelected]?.price;
+  if(forming){
+   liqSeries.update({time:forming.time,open:forming.open,high:Number.isFinite(live)?Math.max(forming.high,live):forming.high,low:Number.isFinite(live)?Math.min(forming.low,live):forming.low,close:Number.isFinite(live)?live:forming.close});
+  }else if(closed.length&&Number.isFinite(live)&&live>0){
+   const last=closed[closed.length-1],bucket=Math.floor(now/900)*900;
+   if(bucket>last.time)liqSeries.update({time:bucket,open:last.close,high:Math.max(last.close,live),low:Math.min(last.close,live),close:live});
+  }
   if(reset||!liqChart._liqFitted){liqChart.timeScale().fitContent();liqChart._liqFitted=true}
   clearLiquidityLines();addLiquidityLine(pdh,"#e7bd70","PREV DAY HIGH");addLiquidityLine(pdl,"#e7bd70","PREV DAY LOW");
   const result=scanLiquidity(today,pdh,pdl),sig=result.signal,pending=result.pending;
@@ -464,7 +464,7 @@ async function refreshLiquidity(reset=false){
   const live=marketData[liqSelected]?.price;
   $("liqPrice").textContent=fmt(live??closed.at(-1)?.close);
   $("liqSymbol").textContent=liqSelected;
-   $("liqSource").textContent=liqSelected==="BTCUSD"?"BTCUSD · BITSTAMP":"Other markets · DELTA EXCHANGE";
+   $("liqSource").textContent="ALL MARKETS · DELTA EXCHANGE";
   $("liqEntry").textContent=sig?fmt(sig.entry):"—";
   $("liqStop").textContent=sig&&sig.stop!=null?fmt(sig.stop):atr==null?"ATR data unavailable":"—";
   $("liqTarget").textContent=sig?fmt(sig.target):"—";
