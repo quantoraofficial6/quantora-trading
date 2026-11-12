@@ -53,7 +53,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 @keyframes sebiTickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
 @media(prefers-reduced-motion:reduce){.sebi-ticker-track{animation:none;padding-left:12px}}
 
-.trade-history-panel{margin:22px 0;padding:18px;border:1px solid #26364b;border-radius:14px;background:#0d1522}.trade-history-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.trade-history-head h2{font-size:16px;margin:0;color:#e7bd70}.history-stats{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0;color:#9aabc0;font-size:12px}.history-table-wrap{overflow:auto}.history-table{width:100%;border-collapse:collapse;min-width:760px;font-size:12px}.history-table th,.history-table td{padding:10px 8px;text-align:left;border-bottom:1px solid #1d2a3c;white-space:nowrap}.history-table th{color:#8292a9;font-weight:600}.history-table td{color:#dce5ef}.history-status{color:#31d6a0}.history-muted{color:#8292a9}.history-actions{display:flex;gap:8px;align-items:center}.history-actions button{background:#172437;color:#e7bd70;border:1px solid #34465f;padding:7px 10px;border-radius:7px}
+.trade-history-panel{margin:22px 0;padding:18px;border:1px solid #26364b;border-radius:14px;background:#0d1522}.trade-history-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.trade-history-head h2{font-size:16px;margin:0;color:#e7bd70}.history-stats{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0;color:#9aabc0;font-size:12px}.history-groups{display:grid;gap:12px}.history-trade{border:1px solid #26364b;border-radius:10px;padding:13px;background:#101d2d}.history-trade-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px}.history-trade-title{font-weight:700;color:#e7bd70}.history-trade-meta{font-size:12px;color:#8292a9}.history-event{display:grid;grid-template-columns:minmax(112px,auto) 1fr auto;gap:9px;padding:9px 0;border-top:1px solid #203047;font-size:12px;align-items:start}.history-event-time{color:#8292a9}.history-event-name{color:#dce5ef}.history-event-price{color:#e7bd70;text-align:right}.history-muted{color:#8292a9}.history-actions{display:flex;gap:8px;align-items:center}.history-actions button{background:#172437;color:#e7bd70;border:1px solid #34465f;padding:7px 10px;border-radius:7px}@media(max-width:520px){.trade-history-panel{padding:13px}.history-event{grid-template-columns:1fr auto}.history-event-time{grid-column:1/-1}.history-stats{gap:10px}.history-trade{padding:10px}}
 </style>
 </head>
 <body>
@@ -125,7 +125,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 <footer class="footer"><span>QUANTORA TERMINAL · VERSION 1.0</span><span>Market data by Delta Exchange public API · No orders are placed</span><span>For research and education only. Not financial advice.</span></footer>
 </div>
 
-<section class="trade-history-panel" id="tradeHistoryPanel"><div class="trade-history-head"><div><h2>TRADE HISTORY · SUPABASE</h2><div class="history-muted" id="historyConnection">Connecting trade database…</div></div><div class="history-actions"><button type="button" id="historyRefresh">↻ Refresh</button></div></div><div class="history-stats"><span>ALL EVENTS: <b id="historyTotal">—</b></span><span>ENTRIES: <b id="historyEntries">—</b></span><span>TARGETS: <b id="historyTargets">—</b></span><span>SL HITS: <b id="historyStops">—</b></span></div><div class="history-table-wrap"><table class="history-table"><thead><tr><th>Date / Time</th><th>Market</th><th>Strategy</th><th>TF</th><th>Side</th><th>Event</th><th>Price</th><th>Stop Loss</th><th>Target</th><th>Details</th></tr></thead><tbody id="historyRows"><tr><td colspan="10" class="history-muted">Loading trade history…</td></tr></tbody></table></div></section>
+<section class="trade-history-panel" id="tradeHistoryPanel"><div class="trade-history-head"><div><h2>TRADE HISTORY · SUPABASE</h2><div class="history-muted" id="historyConnection">Connecting trade database…</div></div><div class="history-actions"><button type="button" id="historyRefresh">↻ Refresh</button></div></div><div class="history-stats"><span>ALL EVENTS: <b id="historyTotal">—</b></span><span>ENTRIES: <b id="historyEntries">—</b></span><span>TARGETS: <b id="historyTargets">—</b></span><span>SL HITS: <b id="historyStops">—</b></span></div><div class="history-groups" id="historyRows"><div class="history-muted">Loading trade history…</div></div></section>
 <script>
 const API="https://api.india.delta.exchange";
 const markets=[
@@ -161,8 +161,16 @@ async function loadTradeHistory(){
   $("historyEntries").textContent=rows.filter(x=>x.event_type==="ENTRY").length;
   $("historyTargets").textContent=rows.filter(x=>x.event_type==="TARGET_HIT").length;
   $("historyStops").textContent=rows.filter(x=>x.event_type==="STOP_LOSS_HIT").length;
-  $("historyRows").innerHTML=rows.length?rows.map(x=>'<tr><td>'+new Date(x.occurred_at).toLocaleString()+'</td><td>'+x.symbol+'</td><td>'+x.strategy+'</td><td>'+x.timeframe+'</td><td class="'+(x.side==="BUY"?"positive":"negative")+'">'+x.side+'</td><td>'+x.event_type+'</td><td>'+fmt(x.price)+'</td><td>'+fmt(x.stop_loss)+'</td><td>'+fmt(x.target_price)+'</td><td title="'+String(x.details||"").replace(/"/g,"&quot;")+'">'+String(x.details||"").slice(0,90)+'</td></tr>').join(""):'<tr><td colspan="10" class="history-muted">No trade events saved yet. Waiting for the next confirmed signal.</td></tr>';
- }catch(e){$("historyConnection").textContent="Database unavailable · "+e.message;$("historyRows").innerHTML='<tr><td colspan="10" class="history-muted">Could not load history. '+e.message+'</td></tr>';console.error(e)}
+  const grouped=new Map();
+  rows.forEach(x=>{const k=x.trade_key||x.event_key;if(!grouped.has(k))grouped.set(k,[]);grouped.get(k).push(x)});
+  const trades=[...grouped.entries()].sort((a,b)=>new Date(b[1][0].candle_time||b[1][0].occurred_at)-new Date(a[1][0].candle_time||a[1][0].occurred_at));
+  $("historyRows").innerHTML=trades.length?trades.map(([key,events])=>{
+   events.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at));
+   const first=events.find(e=>e.event_type==="ENTRY")||events[0],last=events[events.length-1];
+   const entryAt=first.entry_time||first.candle_time||first.occurred_at;
+   return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+first.symbol+' · '+first.side+' · '+first.strategy+'</div><div class="history-trade-meta">'+first.timeframe+' · Entry/candle: '+new Date(entryAt).toLocaleString()+'</div></div><div class="history-trade-meta">'+events.length+' events · '+last.status+'</div></div>'+events.map(e=>'<div class="history-event"><div class="history-event-time">'+new Date(e.candle_time||e.occurred_at).toLocaleString()+'</div><div class="history-event-name">'+e.event_type+'<div class="history-muted">'+String(e.details||"")+'</div></div><div class="history-event-price">'+fmt(e.price)+'</div></div>').join("")+'</article>';
+  }).join(""):'<div class="history-muted">No trade events saved yet. Waiting for the next confirmed signal.</div>';
+ }catch(e){$("historyConnection").textContent="Database unavailable · "+e.message;$("historyRows").innerHTML='<div class="history-muted">Could not load history. '+e.message+'</div>';console.error(e)}
 }
 $("historyRefresh")?.addEventListener("click",loadTradeHistory);
 
@@ -277,8 +285,10 @@ function runStrategy(candles){
   history.unshift({side,kind,price,time,detail});
   if(history.length>8)history.pop();
   const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("TRAILING SL HIT")?"STOP_LOSS_HIT":kind.includes("NEW RANGE")?"RANGE_UPDATE":"STATUS_SNAPSHOT";
+  const activeEntryTime=pos?.entryTime??time;
+  const tradeKey=["DRP",selected,timeframe,activeEntryTime].join(":");
   const eventKey=["DRP",selected,timeframe,eventType,time,Number(price).toFixed(6)].join(":");
-  saveTradeEvent({event_key:eventKey,trade_key:["DRP",selected,timeframe,time].join(":"),strategy:"Dynamic Range Pro",symbol:selected,timeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":eventType==="ENTRY"?"ACTIVE":"ACTIVE",price,entry_price:pos?.entry??price,stop_loss:pos?.sl??null,target_price:pos?.target??null,candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
+  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:selected,timeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
 
  };
  for(let i=1;i<candles.length;i++){
@@ -286,9 +296,10 @@ function runStrategy(candles){
   if(pos){
    if(pos.side==="BUY"){
     if(cur.close<pos.sl){
-     pushEvent("SELL","REVERSE · BUY TRAILING SL HIT",cur.close,cur.time,"Trailing stop hit on candle close; reversed to SELL");
+     pushEvent("BUY","STOP LOSS HIT · BUY TRAILING SL",cur.close,cur.time,"Trailing stop hit on candle close; reversed to SELL");
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),risk=hi-cur.close;
      pos=risk>0?{side:"SELL",entry:cur.close,sl:hi,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false}:null;
+     if(pos)pushEvent("SELL","SELL ENTRY · SL REVERSAL",cur.close,cur.time,"New SELL position opened immediately after BUY trailing stop hit.");
      lastEvent="SELL";
      continue;
     }
@@ -306,9 +317,10 @@ function runStrategy(candles){
     }
    }else{
     if(cur.close>pos.sl){
-     pushEvent("BUY","REVERSE · SELL TRAILING SL HIT",cur.close,cur.time,"Trailing stop hit on candle close; reversed to BUY");
+     pushEvent("SELL","STOP LOSS HIT · SELL TRAILING SL",cur.close,cur.time,"Trailing stop hit on candle close; reversed to BUY");
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),risk=cur.close-lo;
      pos=risk>0?{side:"BUY",entry:cur.close,sl:lo,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false}:null;
+     if(pos)pushEvent("BUY","BUY ENTRY · SL REVERSAL",cur.close,cur.time,"New BUY position opened immediately after SELL trailing stop hit.");
      lastEvent="BUY";
      continue;
     }
@@ -558,7 +570,7 @@ async function refreshLiquidity(reset=false){
    const candleTime=sig.time;
    const tradeKey=["LS",liqSelected,liqDayMode,new Date(bounds.todayStart*1000).toISOString().slice(0,10),sig.side,candleTime].join(":");
    const eventKey=[tradeKey,eventType,sig.slHit?candleTime:sig.targetHit?candleTime:candleTime].join(":");
-   saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Liquidity Sweep",symbol:liqSelected,timeframe:"15m",side:sig.side,event_type:eventType,status:sig.slHit?"STOP_LOSS_HIT":sig.targetHit?"TARGET_HIT":"ACTIVE",price:sig.slHit?sig.stop:sig.targetHit?sig.target:sig.entry,entry_price:sig.entry,stop_loss:sig.stop,target_price:sig.target,exit_price:sig.slHit?sig.stop:sig.targetHit?sig.target:null,candle_time:new Date(candleTime*1000).toISOString(),details:result.activity,metadata:{day_mode:liqDayMode,pdh,pdl,atr,buffer}});
+   saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Liquidity Sweep",symbol:liqSelected,timeframe:"15m",side:sig.side,event_type:eventType,status:sig.slHit?"STOP_LOSS_HIT":sig.targetHit?"TARGET_HIT":"ACTIVE",price:sig.slHit?sig.stop:sig.targetHit?sig.target:sig.entry,entry_price:sig.entry,stop_loss:sig.stop,target_price:sig.target,exit_price:sig.slHit?sig.stop:sig.targetHit?sig.target:null,entry_time:new Date(candleTime*1000).toISOString(),candle_time:new Date(candleTime*1000).toISOString(),details:result.activity,metadata:{day_mode:liqDayMode,pdh,pdl,atr,buffer}});
   }
   $("liqPDH").textContent=fmt(pdh);$("liqPDL").textContent=fmt(pdl);
   $("liqPrice").textContent=fmt(live??closed.at(-1)?.close);
