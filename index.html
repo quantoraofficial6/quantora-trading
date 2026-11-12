@@ -39,6 +39,12 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 
 /* Keep strategy explanations hidden; preserve the signal engine and dashboard data. */
 .signal-desc,.strategy-note{display:none!important}
+
+.strategy-switch{display:flex;gap:9px;margin:18px 0 16px;flex-wrap:wrap}.strategy-tab{border:1px solid var(--line);background:#101a29;color:var(--muted);padding:11px 16px;border-radius:10px;font-size:11px;font-weight:800;letter-spacing:.3px}.strategy-tab.active{color:var(--gold);border-color:#8b6c3d;background:#211d17;box-shadow:0 5px 18px #0003}.strategy-tab span{margin-left:7px;font:9px var(--mono);color:var(--green)}
+[hidden]{display:none!important}.liquidity-panel{padding-bottom:14px}.liquidity-head{padding-bottom:15px}.liquidity-coins{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;padding:14px 16px}.liq-coin{border:1px solid var(--line);background:#111c2b;color:var(--text);border-radius:10px;padding:11px 9px;text-align:left;min-width:0}.liq-coin.active{border-color:#9a7845;background:#211d17}.liq-coin b{display:block;font-size:11px}.liq-coin small{display:block;color:var(--muted);font:9px var(--mono);margin-top:5px}.liquidity-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,.8fr);gap:14px;padding:0 14px}.liquidity-chart-panel{min-width:0}.liquidity-chart{height:430px}.badge-level{font:10px var(--mono);color:var(--gold);border:1px solid #735a34;background:#211d17;padding:7px 10px;border-radius:8px}.liq-status{padding:18px 17px 10px}.liq-message{font-size:11px;color:var(--muted);line-height:1.6;min-height:34px}.liq-levels{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 14px}.liq-levels .signal-level{padding:11px}.liq-levels .signal-level b{font-size:12px}.liq-levels .full{grid-column:1/-1}.liq-activity{border-top:1px solid var(--line);padding:14px 16px}.liq-activity .panel-title{margin-bottom:7px}.liq-footnote{padding:12px 18px 0;color:var(--muted);font-size:9px;line-height:1.5}.positive-signal{color:var(--green)!important}.negative-signal{color:var(--red)!important}
+@media(max-width:950px){.liquidity-layout{grid-template-columns:1fr}.liquidity-chart{height:350px}}
+@media(max-width:560px){.strategy-switch{margin:14px 0}.strategy-tab{flex:1;padding:10px 8px;font-size:10px}.liquidity-coins{grid-template-columns:repeat(3,minmax(0,1fr));padding:10px;gap:7px}.liquidity-layout{padding:0 9px}.liquidity-chart{height:310px}.liq-status{padding:15px}.liq-levels{padding:0 12px 12px}}
+
 </style>
 </head>
 <body>
@@ -48,6 +54,12 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
  <div class="top-right"><div class="live-pill"><i class="pulse"></i> LIVE MARKET</div><button id="refreshPrices" class="tf" type="button" style="border:1px solid #34465f">↻ Refresh</button><div class="clock" id="clock">--:--:--</div></div>
 </header>
 <section class="welcome"><div><div class="eyebrow">MARKET OVERVIEW</div><h1>Trade with clarity.</h1><p>Live crypto and tokenized gold markets, precision charts and strategy-driven signals.</p></div><div class="market-status" id="connection">Connecting to Delta Exchange…</div></section>
+<section class="strategy-switch" aria-label="Strategy selector">
+ <button class="strategy-tab active" id="classicTab" type="button">Two Candle Breakout</button>
+ <button class="strategy-tab" id="liquidityTab" type="button">Liquidity Sweep <span>15M</span></button>
+</section>
+
+<div id="classicView">
 <section class="market-strip" id="marketStrip">
  <div class="market-card"><div class="muted">Loading markets…</div></div>
 </section>
@@ -67,6 +79,36 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 <section class="lower-grid">
  <div class="panel"><div class="panel-head"><div><div class="panel-title">MARKET STRUCTURE</div><div class="panel-caption">AUTOMATIC SWING LEVELS · SELECTED MARKET</div></div></div><div class="levels-row"><div class="metric"><span>NEAREST SUPPORT</span><b id="support">—</b></div><div class="metric"><span>NEAREST RESISTANCE</span><b id="resistance">—</b></div><div class="metric"><span>SWING LOWS</span><b id="swingLows">—</b></div><div class="metric"><span>SWING HIGHS</span><b id="swingHighs">—</b></div></div></div>
  <div class="panel"><div class="panel-head"><div><div class="panel-title">SIGNAL ACTIVITY</div><div class="panel-caption">YOUR RECENT STRATEGY ALERTS</div></div></div><div class="feed" id="signalFeed"><div class="feed-empty">Waiting for a confirmed two-candle setup.</div></div></div>
+</section>
+</div>
+<section id="liquidityView" class="liquidity-view" hidden>
+ <div class="panel liquidity-panel">
+  <div class="panel-head liquidity-head">
+   <div><div class="panel-title">LIQUIDITY SWEEP</div><div class="panel-caption">PREVIOUS DAY HIGH / LOW · 15 MIN ONLY · INDIA TIME (IST)</div></div>
+   <span class="live-pill"><i class="pulse"></i> LIVE SCAN</span>
+  </div>
+  <div class="liquidity-coins" id="liquidityCoins"></div>
+  <div class="liquidity-layout">
+   <div class="panel liquidity-chart-panel">
+    <div class="panel-head"><div><div class="chart-meta"><span class="selected-name" id="liqSymbol">BTCUSD</span><span class="selected-price" id="liqPrice">—</span></div><div class="panel-caption">15M CANDLE CHART · PREVIOUS DAY LEVELS</div></div><span class="badge-level">15 MIN</span></div>
+    <div class="chart-wrap liquidity-chart" id="liquidityChart"></div>
+    <div class="chart-foot"><span>Gold: previous day levels</span><span id="liqUpdated">Loading chart…</span><span>15m candles</span></div>
+   </div>
+   <aside class="panel liquidity-signal">
+    <div class="panel-head"><div><div class="panel-title">LIQUIDITY SIGNAL</div><div class="panel-caption">SELECTED MARKET</div></div><span class="live-pill">15M ENGINE</span></div>
+    <div class="liq-status"><div class="signal-label">CURRENT SETUP</div><div class="signal-state"><i class="signal-dot" id="liqDot"></i><strong id="liqSignal">WAIT</strong></div><div class="liq-message" id="liqMessage">Waiting for a previous-day liquidity sweep.</div></div>
+    <div class="liq-levels">
+     <div class="signal-level"><span>PREVIOUS DAY HIGH</span><b id="liqPDH">—</b></div>
+     <div class="signal-level"><span>PREVIOUS DAY LOW</span><b id="liqPDL">—</b></div>
+     <div class="signal-level"><span>ENTRY PRICE</span><b id="liqEntry">—</b></div>
+     <div class="signal-level"><span>TARGET</span><b id="liqTarget">—</b></div>
+     <div class="signal-level full"><span>TRIGGER CANDLE LEVEL</span><b id="liqTrigger">—</b></div>
+    </div>
+    <div class="liq-activity"><div class="panel-title">SIGNAL ACTIVITY</div><div id="liqActivity" class="feed-empty">No confirmed signal today.</div></div>
+   </aside>
+  </div>
+  <div class="liq-footnote">Signals are confirmed only after a 15-minute candle closes. Previous-day levels are calculated using the India market day (00:00–23:59 IST). This tool does not place orders.</div>
+ </div>
 </section>
 <footer class="footer"><span>QUANTORA TERMINAL · VERSION 1.0</span><span>Market data by Delta Exchange public API · No orders are placed</span><span>For research and education only. Not financial advice.</span></footer>
 </div>
@@ -272,12 +314,118 @@ function updateStructure(c){
 }
 async function selectMarket(s){selected=s;chartHasFit=false;renderMarkets();$("chartSymbol").textContent=s;$("chartUpdated").textContent="Loading "+s+"…";await refreshTickers();await refreshChart();const d=marketData[s];if(d)$("chartPrice").textContent=fmt(d.price)}
 document.querySelectorAll(".tf").forEach(b=>b.addEventListener("click",()=>{timeframe=b.dataset.tf;chartHasFit=false;document.querySelectorAll(".tf").forEach(x=>x.classList.toggle("active",x===b));refreshChart()}));
+
+// ---------------- LIQUIDITY SWEEP: previous-day levels, 15-minute candles only ----------------
+let liqSelected="BTCUSD",liqChart=null,liqSeries=null,liqBusy=false,liqLines=[];
+const liqMarkets=markets;
+function istDayBounds(){
+ const now=Date.now(),ist=new Date(now+330*60000);
+ const todayStart=Date.UTC(ist.getUTCFullYear(),ist.getUTCMonth(),ist.getUTCDate())/1000-330*60;
+ return {todayStart,previousStart:todayStart-86400,now:Math.floor(now/1000)};
+}
+function initLiquidityChart(){
+ const el=$("liquidityChart");if(!window.LightweightCharts){el.innerHTML='<div class="chart-placeholder">Chart library unavailable.</div>';return}
+ liqChart=LightweightCharts.createChart(el,{width:el.clientWidth,height:el.clientHeight,layout:{background:{type:"solid",color:"#0d1522"},textColor:"#8192a9",fontFamily:"DM Mono, monospace"},grid:{vertLines:{color:"#172437"},horzLines:{color:"#172437"}},rightPriceScale:{borderColor:"#26364b"},timeScale:{borderColor:"#26364b",timeVisible:true,secondsVisible:false},crosshair:{mode:LightweightCharts.CrosshairMode.Normal}});
+ liqSeries=liqChart.addCandlestickSeries({upColor:"#31d6a0",downColor:"#ff647c",borderUpColor:"#31d6a0",borderDownColor:"#ff647c",wickUpColor:"#31d6a0",wickDownColor:"#ff647c"});
+ new ResizeObserver(()=>{if(liqChart)liqChart.applyOptions({width:el.clientWidth,height:el.clientHeight})}).observe(el);
+}
+function renderLiquidityCoins(){
+ $("liquidityCoins").innerHTML=liqMarkets.map(m=>{const d=marketData[m.symbol];return '<button type="button" class="liq-coin '+(liqSelected===m.symbol?'active':'')+'" data-liq="'+m.symbol+'"><b>'+m.ticker+'</b><small>'+(d?fmt(d.price):m.name)+'</small></button>'}).join("");
+ document.querySelectorAll("[data-liq]").forEach(b=>b.addEventListener("click",()=>{liqSelected=b.dataset.liq;renderLiquidityCoins();refreshLiquidity(true)}));
+}
+function clearLiquidityLines(){liqLines.forEach(x=>{try{liqSeries.removePriceLine(x)}catch(_){}});liqLines=[]}
+function addLiquidityLine(price,color,title,style=2){if(Number.isFinite(price)&&liqSeries)liqLines.push(liqSeries.createPriceLine({price,color,lineWidth:1,lineStyle:style,axisLabelVisible:true,title}));}
+async function fetchLiquidityCandles(){
+ const bounds=istDayBounds(),start=bounds.previousStart-900,end=bounds.now;
+ const url=API+"/v2/history/candles?resolution=15m&symbol="+encodeURIComponent(liqSelected)+"&start="+start+"&end="+end;
+ const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("15m candle API HTTP "+r.status);
+ const j=await r.json();if(j.success===false)throw Error("15m candle data unavailable");
+ const rows=(j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time);
+ return {rows:rows.filter((c,i,a)=>!i||c.time!==a[i-1].time),bounds};
+}
+function scanLiquidity(candles,pdh,pdl){
+ let pending=null,signal=null,activity="Waiting for a previous-day liquidity sweep.";
+ for(let i=0;i<candles.length;i++){
+  const c=candles[i];
+  if(signal){
+   if(signal.side==="BUY"&&c.time>signal.time&&c.high>=pdh){signal.targetHit=true;activity="BUY target (previous day high) reached.";break}
+   if(signal.side==="SELL"&&c.time>signal.time&&c.low<=pdl){signal.targetHit=true;activity="SELL target (previous day low) reached.";break}
+   continue;
+  }
+  if(pending?.stage==="BREAK"){
+   if(pending.side==="BUY"&&c.close>pending.level&&c.close<pdh){
+    signal={side:"BUY",entry:c.close,target:pdh,level:pending.level,time:c.time,sweep:pending.sweep};activity="BUY confirmed: 15m candle closed above the confirmation candle high.";break;
+   }
+   if(pending.side==="SELL"&&c.close<pending.level&&c.close>pdl){
+    signal={side:"SELL",entry:c.close,target:pdl,level:pending.level,time:c.time,sweep:pending.sweep};activity="SELL confirmed: 15m candle closed below the confirmation candle low.";break;
+   }
+   continue;
+  }
+  if(pending?.stage==="CONFIRM"){
+   if(pending.side==="BUY"){
+    if(c.low>pdl&&c.close>pdl){pending={side:"BUY",stage:"BREAK",level:c.high,sweep:pending.sweep,confirm:c};activity="Low swept. Confirmation candle formed; waiting for its high to break on candle close."}
+    else if(c.low<=pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="A fresh previous-day-low sweep is being checked."}
+    else{pending=null;activity="Setup invalidated before confirmation; waiting for another sweep."}
+   }else{
+    if(c.high<pdh&&c.close<pdh){pending={side:"SELL",stage:"BREAK",level:c.low,sweep:pending.sweep,confirm:c};activity="High swept. Confirmation candle formed; waiting for its low to break on candle close."}
+    else if(c.high>=pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="A fresh previous-day-high sweep is being checked."}
+    else{pending=null;activity="Setup invalidated before confirmation; waiting for another sweep."}
+   }
+   continue;
+  }
+  if(c.low<=pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="Previous day low swept and reclaimed. Waiting for the next clean candle."}
+  else if(c.high>=pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="Previous day high swept and rejected. Waiting for the next clean candle."}
+ }
+ return {pending,signal,activity};
+}
+async function refreshLiquidity(reset=false){
+ if(liqBusy||!liqSeries)return;liqBusy=true;
+ try{
+  const {rows,bounds}=await fetchLiquidityCandles(),now=bounds.now;
+  const closed=rows.filter(c=>c.time+900<=now),forming=rows.filter(c=>c.time+900>now).slice(-1)[0];
+  const prev=closed.filter(c=>c.time>=bounds.previousStart&&c.time<bounds.todayStart);
+  const today=closed.filter(c=>c.time>=bounds.todayStart);
+  if(!prev.length)throw Error("Previous day candles not available yet.");
+  const pdh=Math.max(...prev.map(c=>c.high)),pdl=Math.min(...prev.map(c=>c.low));
+  liqSeries.setData(closed.map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})));
+  if(forming)liqSeries.update({time:forming.time,open:forming.open,high:forming.high,low:forming.low,close:forming.close});
+  if(reset||!liqChart._liqFitted){liqChart.timeScale().fitContent();liqChart._liqFitted=true}
+  clearLiquidityLines();addLiquidityLine(pdh,"#e7bd70","PREV DAY HIGH");addLiquidityLine(pdl,"#e7bd70","PREV DAY LOW");
+  const result=scanLiquidity(today,pdh,pdl),sig=result.signal,pending=result.pending;
+  $("liqPDH").textContent=fmt(pdh);$("liqPDL").textContent=fmt(pdl);
+  const live=marketData[liqSelected]?.price;
+  $("liqPrice").textContent=fmt(live??closed.at(-1)?.close);
+  $("liqSymbol").textContent=liqSelected;
+  $("liqEntry").textContent=sig?fmt(sig.entry):"—";
+  $("liqTarget").textContent=sig?fmt(sig.target):"—";
+  $("liqTrigger").textContent=pending?.stage==="BREAK"?fmt(pending.level):sig?fmt(sig.level):"—";
+  $("liqSignal").className=sig?(sig.side==="BUY"?"positive-signal":"negative-signal"):"";
+  $("liqSignal").textContent=sig?(sig.targetHit?sig.side+" TARGET HIT":sig.side):pending?(pending.side+" SETUP"):"WAIT";
+  $("liqDot").style.background=sig?(sig.side==="BUY"?"#31d6a0":"#ff647c"):"#e7bd70";
+  $("liqMessage").textContent=sig?result.activity:result.activity;
+  if(pending?.stage==="BREAK")addLiquidityLine(pending.level,"#6fa9ff","TRIGGER LEVEL",1);
+  if(sig)addLiquidityLine(sig.target,"#31d6a0","TARGET");
+  $("liqActivity").textContent=sig?result.activity:result.activity;
+  $("liqUpdated").textContent="Updated "+new Date().toLocaleTimeString()+" · closed candles only for signals";
+  renderLiquidityCoins();
+ }catch(e){$("liqUpdated").textContent="Liquidity data unavailable · "+e.message;$("liqMessage").textContent=e.message;console.error("Liquidity sweep:",e)}
+ finally{liqBusy=false}
+}
+function showStrategy(which){
+ const liq=which==="liquidity";
+ $("classicView").hidden=liq;$("liquidityView").hidden=!liq;
+ $("classicTab").classList.toggle("active",!liq);$("liquidityTab").classList.toggle("active",liq);
+ if(liq){if(!liqChart)initLiquidityChart();renderLiquidityCoins();refreshLiquidity(true)}
+}
+$("classicTab").addEventListener("click",()=>showStrategy("classic"));
+$("liquidityTab").addEventListener("click",()=>showStrategy("liquidity"));
+
 function tickClock(){$("clock").textContent=new Date().toLocaleTimeString()}
 $("refreshPrices")?.addEventListener("click",()=>refreshTickers());
 async function start(){
  tickClock();setInterval(tickClock,1000);initChart();
  await Promise.allSettled([refreshTickers(),refreshChart()]);
- setInterval(refreshTickers,10000);setInterval(refreshChart,5000);
+ setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
 }
 start();
 </script>
