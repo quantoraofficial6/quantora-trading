@@ -439,10 +439,10 @@ async function refreshLiquidity(reset=false){
   $("liqSignal").className=sig?(sig.side==="BUY"?"positive-signal":"negative-signal"):"";
   $("liqSignal").textContent=sig?(sig.targetHit?sig.side+" TARGET HIT":sig.side):pending?(pending.side+" SETUP"):"WAIT";
   $("liqDot").style.background=sig?(sig.side==="BUY"?"#31d6a0":"#ff647c"):"#e7bd70";
-  $("liqMessage").textContent=sig?result.activity:result.activity;
+  $("liqMessage").textContent="["+(liqDayMode==="UTC"?"05:30 IST UTC DAY":"00:00 IST INDIA DAY")+"] "+result.activity;
   if(pending?.stage==="BREAK")addLiquidityLine(pending.level,"#6fa9ff","TRIGGER LEVEL",1);
   if(sig){addLiquidityLine(sig.target,"#31d6a0","TARGET");if(sig.stop!=null)addLiquidityLine(sig.stop,"#ff647c","STOP LOSS");}
-  $("liqActivity").textContent=sig?result.activity:result.activity;
+  $("liqActivity").textContent="["+(liqDayMode==="UTC"?"05:30 IST UTC DAY":"00:00 IST INDIA DAY")+"] "+result.activity;
   $("liqUpdated").textContent="Updated "+new Date().toLocaleTimeString()+" · "+(liqDayMode==="UTC"?"05:30 IST day":"00:00 IST day")+" · closed candles only";
   renderLiquidityCoins();
  }catch(e){$("liqUpdated").textContent="Liquidity data unavailable · "+e.message;$("liqMessage").textContent=e.message;console.error("Liquidity sweep:",e)}
