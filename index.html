@@ -84,13 +84,13 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 <section id="liquidityView" class="liquidity-view" hidden>
  <div class="panel liquidity-panel">
   <div class="panel-head liquidity-head">
-   <div><div class="panel-title">LIQUIDITY SWEEP</div><div class="panel-caption">PREVIOUS DAY HIGH / LOW · 15 MIN ONLY · INDIA TIME (IST)</div></div>
+   <div><div class="panel-title">LIQUIDITY SWEEP</div><div class="panel-caption">PREVIOUS DAY HIGH / LOW · 15 MIN ONLY · UTC DAY (05:30 IST)</div></div>
    <span class="live-pill"><i class="pulse"></i> LIVE SCAN</span>
   </div>
   <div class="liquidity-coins" id="liquidityCoins"></div>
   <div class="liquidity-layout">
    <div class="panel liquidity-chart-panel">
-    <div class="panel-head"><div><div class="chart-meta"><span class="selected-name" id="liqSymbol">BTCUSD</span><span class="selected-price" id="liqPrice">—</span></div><div class="panel-caption">15M CANDLE CHART · PREVIOUS DAY LEVELS</div></div><span class="badge-level">15 MIN</span></div>
+    <div class="panel-head"><div><div class="chart-meta"><span class="selected-name" id="liqSymbol">BTCUSD</span><span class="selected-price" id="liqPrice">—</span></div><div class="panel-caption">15M CANDLE CHART · PREVIOUS DAY LEVELS · UTC DAY</div></div><span class="badge-level">15 MIN</span></div>
     <div class="chart-wrap liquidity-chart" id="liquidityChart"></div>
     <div class="chart-foot"><span>Gold: previous day levels</span><span id="liqUpdated">Loading chart…</span><span>15m candles</span></div>
    </div>
@@ -320,9 +320,10 @@ document.querySelectorAll(".tf").forEach(b=>b.addEventListener("click",()=>{time
 let liqSelected="BTCUSD",liqChart=null,liqSeries=null,liqBusy=false,liqLines=[];
 const liqMarkets=markets;
 function istDayBounds(){
- const now=Date.now(),ist=new Date(now+330*60000);
- const todayStart=Date.UTC(ist.getUTCFullYear(),ist.getUTCMonth(),ist.getUTCDate())/1000-330*60;
- return {todayStart,previousStart:todayStart-86400,now:Math.floor(now/1000)};
+ // Match TradingView crypto daily candle boundary: 00:00 UTC = 05:30 IST.
+ const now=Math.floor(Date.now()/1000),utc=new Date(now*1000);
+ const todayStart=Date.UTC(utc.getUTCFullYear(),utc.getUTCMonth(),utc.getUTCDate())/1000;
+ return {todayStart,previousStart:todayStart-86400,now};
 }
 function initLiquidityChart(){
  const el=$("liquidityChart");if(!window.LightweightCharts){el.innerHTML='<div class="chart-placeholder">Chart library unavailable.</div>';return}
