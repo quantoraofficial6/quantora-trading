@@ -234,8 +234,8 @@ function clearStrategyLines(){strategyPriceLines.forEach(x=>{try{candleSeries.re
 function addStrategyLine(p,color,label,style=2){const x=priceLine(p,color,label,style);if(x)strategyPriceLines.push(x)}
 function runStrategy(candles){
  const history=[];
- let pos=null, lastEvent=null;
- const green=x=>x.close>x.open, red=x=>x.close<x.open;
+ let pos=null,lastEvent=null;
+ const green=x=>x.close>x.open,red=x=>x.close<x.open;
  const pushEvent=(side,kind,price,time,detail)=>{
   history.unshift({side,kind,price,time,detail});
   if(history.length>8)history.pop();
@@ -245,42 +245,56 @@ function runStrategy(candles){
   if(pos){
    if(pos.side==="BUY"){
     if(cur.close<pos.sl){
-     pushEvent("SELL","REVERSE · BUY SL HIT",cur.close,cur.time,"Reverse confirmed on this candle close");
-     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
-     pos={side:"SELL",entry:cur.close,sl:hi,target:cur.close-2*(hi-cur.close),rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time};
+     pushEvent("SELL","REVERSE · BUY TRAILING SL HIT",cur.close,cur.time,"Trailing stop hit on candle close; reversed to SELL");
+     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),risk=hi-cur.close;
+     pos=risk>0?{side:"SELL",entry:cur.close,sl:hi,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false}:null;
      lastEvent="SELL";
-    }else if(cur.high>=pos.target){
-     pushEvent("BUY","TARGET HIT",pos.target,cur.time,"2R target reached");pos=null;lastEvent="TARGET";
-    }else if(cur.close>pos.rangeHigh){
+     continue;
+    }
+    if(!pos.targetHit&&cur.high>=pos.target){
+     pos.targetHit=true;
+     pushEvent("BUY","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position stays active; trailing stop and next target continue automatically.");
+     lastEvent="TARGET";
+    }
+    if(cur.close>pos.rangeHigh){
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
-     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=lo;pos.second=cur;
-     pushEvent("BUY","RANGE TRAILED",cur.close,cur.time,"New range: previous range second candle + breakout candle");
+     const nextSL=Math.max(pos.sl,lo),risk=cur.close-nextSL;
+     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
+     if(risk>0)pos.target=cur.close+2*risk;
+     pushEvent("BUY","NEW RANGE · SL TRAILED",cur.close,cur.time,"New breakout range formed. Stop moved up only; next 2R target recalculated.");
     }
    }else{
     if(cur.close>pos.sl){
-     pushEvent("BUY","REVERSE · SELL SL HIT",cur.close,cur.time,"Reverse confirmed on this candle close");
-     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
-     pos={side:"BUY",entry:cur.close,sl:lo,target:cur.close+2*(cur.close-lo),rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time};
+     pushEvent("BUY","REVERSE · SELL TRAILING SL HIT",cur.close,cur.time,"Trailing stop hit on candle close; reversed to BUY");
+     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),risk=cur.close-lo;
+     pos=risk>0?{side:"BUY",entry:cur.close,sl:lo,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false}:null;
      lastEvent="BUY";
-    }else if(cur.low<=pos.target){
-     pushEvent("SELL","TARGET HIT",pos.target,cur.time,"2R target reached");pos=null;lastEvent="TARGET";
-    }else if(cur.close<pos.rangeLow){
+     continue;
+    }
+    if(!pos.targetHit&&cur.low<=pos.target){
+     pos.targetHit=true;
+     pushEvent("SELL","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position stays active; trailing stop and next target continue automatically.");
+     lastEvent="TARGET";
+    }
+    if(cur.close<pos.rangeLow){
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
-     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=hi;pos.second=cur;
-     pushEvent("SELL","RANGE TRAILED",cur.close,cur.time,"New range: previous range second candle + breakout candle");
+     const nextSL=Math.min(pos.sl,hi),risk=nextSL-cur.close;
+     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
+     if(risk>0)pos.target=cur.close-2*risk;
+     pushEvent("SELL","NEW RANGE · SL TRAILED",cur.close,cur.time,"New breakdown range formed. Stop moved down only; next 2R target recalculated.");
     }
    }
   }else{
    if(green(prev)&&green(cur)&&cur.close>prev.high){
     const hi=Math.max(prev.high,cur.high),lo=Math.min(prev.low,cur.low),risk=cur.close-lo;
     if(risk>0){
-     pos={side:"BUY",entry:cur.close,sl:lo,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time};
+     pos={side:"BUY",entry:cur.close,sl:lo,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false};
      pushEvent("BUY","BUY ENTRY",cur.close,cur.time,"Two green candles · second closed above first high");lastEvent="BUY";
     }
    }else if(red(prev)&&red(cur)&&cur.close<prev.low){
     const hi=Math.max(prev.high,cur.high),lo=Math.min(prev.low,cur.low),risk=hi-cur.close;
     if(risk>0){
-     pos={side:"SELL",entry:cur.close,sl:hi,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time};
+     pos={side:"SELL",entry:cur.close,sl:hi,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false};
      pushEvent("SELL","SELL ENTRY",cur.close,cur.time,"Two red candles · second closed below first low");lastEvent="SELL";
     }
    }
@@ -289,22 +303,21 @@ function runStrategy(candles){
  clearStrategyLines();
  if(pos){
   const isBuy=pos.side==="BUY";
-  $("signalState").textContent=pos.side;
+  $("signalState").textContent=pos.targetHit?(pos.side+" · TARGET HIT · TRAILING"):pos.side;
   $("signalState").style.color=isBuy?"#31d6a0":"#ff647c";
-  $("signalReason").textContent=(isBuy?"Two-green-candle breakout active. ":"Two-red-candle breakdown active. ")+"Signals use closed "+timeframe+" candles; reverse occurs immediately when SL is breached on candle close.";
+  $("signalReason").textContent=(pos.targetHit?"TARGET HIT. Position remains active; new ranges trail the stop and recalculate the next target. ":"")+(isBuy?"Two-green-candle breakout active. ":"Two-red-candle breakdown active. ")+"Signals use closed "+timeframe+" candles; opposite signal appears when trailing SL is breached on candle close.";
   $("entry").textContent=fmt(pos.entry);$("stop").textContent=fmt(pos.sl);$("target").textContent=fmt(pos.target);$("rr").textContent="1 : 2";
-  addStrategyLine(pos.sl,isBuy?"#ff647c":"#ff647c","STOP LOSS");
-  addStrategyLine(pos.target,"#31d6a0","2R TARGET");
+  addStrategyLine(pos.sl,"#ff647c","TRAILING STOP");
+  addStrategyLine(pos.target,"#31d6a0",pos.targetHit?"NEXT TARGET":"2R TARGET");
   addStrategyLine(isBuy?pos.rangeHigh:pos.rangeLow,"#e7bd70","ACTIVE RANGE",1);
  }else{
   $("signalState").textContent=lastEvent==="TARGET"?"TARGET HIT":"WAIT";
   $("signalState").style.color=lastEvent==="TARGET"?"#e7bd70":"#e7bd70";
-  $("signalReason").textContent=lastEvent==="TARGET"?"2R target reached. Waiting for the next confirmed two-candle setup.":"No active position. Waiting for two consecutive candles and a confirmed close beyond the first candle’s high/low.";
+  $("signalReason").textContent="No active position. Waiting for two consecutive candles and a confirmed close beyond the first candle’s high/low.";
   $("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";
  }
  $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'</div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
 }
-
 function updateStructure(c){
  const highs=[],lows=[];
  for(let i=2;i<c.length-2;i++){
