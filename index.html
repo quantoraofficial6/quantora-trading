@@ -404,9 +404,10 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
     if(cur.close>pos.rangeHigh){
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
      const nextSL=Math.max(pos.sl,lo),risk=cur.close-nextSL;
+     const recalculateTarget=pos.targetHit;
      pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
-     if(risk>0)pos.target=cur.close+2*risk;
-     pushEvent("BUY","NEW RANGE · SL TRAILED",cur.close,cur.time,"New breakout range formed. Stop moved up only; next 2R target recalculated.");
+     if(recalculateTarget&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;}
+     pushEvent("BUY",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,recalculateTarget&&risk>0?"After the previous target was hit, this breakout formed the next range. Stop trailed and a fresh 2R target was calculated.":"New breakout range formed. Stop trailed only; target remains unchanged until it is hit.");
     }
    }else{
     if(cur.close>pos.sl){
@@ -425,9 +426,10 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
     if(cur.close<pos.rangeLow){
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
      const nextSL=Math.min(pos.sl,hi),risk=nextSL-cur.close;
+     const recalculateTarget=pos.targetHit;
      pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
-     if(risk>0)pos.target=cur.close-2*risk;
-     pushEvent("SELL","NEW RANGE · SL TRAILED",cur.close,cur.time,"New breakdown range formed. Stop moved down only; next 2R target recalculated.");
+     if(recalculateTarget&&risk>0){pos.target=cur.close-2*risk;pos.targetHit=false;}
+     pushEvent("SELL",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,recalculateTarget&&risk>0?"After the previous target was hit, this breakdown formed the next range. Stop trailed and a fresh 2R target was calculated.":"New breakdown range formed. Stop trailed only; target remains unchanged until it is hit.");
     }
    }
   }else{
