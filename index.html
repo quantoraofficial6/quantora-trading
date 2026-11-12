@@ -404,7 +404,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
     if(cur.close>pos.rangeHigh){
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
      const nextSL=Math.max(pos.sl,lo),risk=cur.close-nextSL;
-     const recalculateTarget=pos.targetHit&&Number.isFinite(pos.targetHitTime)&&cur.time>pos.targetHitTime;
+     const recalculateTarget=pos.targetHit;
      pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
      if(recalculateTarget&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;pos.targetHitTime=null;}
      pushEvent("BUY",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,"");
