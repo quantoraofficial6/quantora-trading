@@ -448,12 +448,12 @@ async function refreshLiquidity(reset=false){
   const pdh=Math.max(...prev.map(c=>c.high)),pdl=Math.min(...prev.map(c=>c.low));
   liqSeries.setData(closed.map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})));
   // Keep the displayed in-progress candle aligned with Delta's live ticker price.
-  const live=marketData[liqSelected]?.price;
+  const chartLive=marketData[liqSelected]?.price;
   if(forming){
-   liqSeries.update({time:forming.time,open:forming.open,high:Number.isFinite(live)?Math.max(forming.high,live):forming.high,low:Number.isFinite(live)?Math.min(forming.low,live):forming.low,close:Number.isFinite(live)?live:forming.close});
-  }else if(closed.length&&Number.isFinite(live)&&live>0){
+   liqSeries.update({time:forming.time,open:forming.open,high:Number.isFinite(chartLive)?Math.max(forming.high,chartLive):forming.high,low:Number.isFinite(chartLive)?Math.min(forming.low,chartLive):forming.low,close:Number.isFinite(chartLive)?chartLive:forming.close});
+  }else if(closed.length&&Number.isFinite(chartLive)&&chartLive>0){
    const last=closed[closed.length-1],bucket=Math.floor(now/900)*900;
-   if(bucket>last.time)liqSeries.update({time:bucket,open:last.close,high:Math.max(last.close,live),low:Math.min(last.close,live),close:live});
+   if(bucket>last.time)liqSeries.update({time:bucket,open:last.close,high:Math.max(last.close,chartLive),low:Math.min(last.close,chartLive),close:chartLive});
   }
   if(reset||!liqChart._liqFitted){liqChart.timeScale().fitContent();liqChart._liqFitted=true}
   clearLiquidityLines();addLiquidityLine(pdh,"#e7bd70","PREV DAY HIGH");addLiquidityLine(pdl,"#e7bd70","PREV DAY LOW");
