@@ -333,10 +333,28 @@ function istDayBounds(mode="UTC"){
  return {todayStart,previousStart:todayStart-86400,now};
 }
 function initLiquidityChart(){
- const el=$("liquidityChart");if(!window.LightweightCharts){el.innerHTML='<div class="chart-placeholder">Chart library unavailable.</div>';return}
- liqChart=LightweightCharts.createChart(el,{width:el.clientWidth,height:el.clientHeight,layout:{background:{type:"solid",color:"#0d1522"},textColor:"#8192a9",fontFamily:"DM Mono, monospace"},grid:{vertLines:{color:"#172437"},horzLines:{color:"#172437"}},rightPriceScale:{borderColor:"#26364b"},timeScale:{borderColor:"#26364b",timeVisible:true,secondsVisible:false},crosshair:{mode:LightweightCharts.CrosshairMode.Normal}});
- liqSeries=liqChart.addCandlestickSeries({upColor:"#31d6a0",downColor:"#ff647c",borderUpColor:"#31d6a0",borderDownColor:"#ff647c",wickUpColor:"#31d6a0",wickDownColor:"#ff647c"});
- new ResizeObserver(()=>{if(liqChart)liqChart.applyOptions({width:el.clientWidth,height:el.clientHeight})}).observe(el);
+ const el=$("liquidityChart");
+ if(!el)throw Error("Liquidity chart container not found");
+ if(!window.LightweightCharts){el.innerHTML='<div class="chart-placeholder">Chart library unavailable. Check internet and reload.</div>';throw Error("Lightweight Charts library did not load")}
+ if(liqChart&&liqSeries)return;
+ try{
+  const width=Math.max(300,el.getBoundingClientRect().width||el.clientWidth||300);
+  const height=Math.max(260,el.getBoundingClientRect().height||el.clientHeight||310);
+  liqChart=LightweightCharts.createChart(el,{width,height,layout:{background:{type:"solid",color:"#0d1522"},textColor:"#8192a9",fontFamily:"DM Mono, monospace"},grid:{vertLines:{color:"#172437"},horzLines:{color:"#172437"}},rightPriceScale:{borderColor:"#26364b"},timeScale:{borderColor:"#26364b",timeVisible:true,secondsVisible:false},crosshair:{mode:LightweightCharts.CrosshairMode.Normal}});
+  liqSeries=liqChart.addCandlestickSeries({upColor:"#31d6a0",downColor:"#ff647c",borderUpColor:"#31d6a0",borderDownColor:"#ff647c",wickUpColor:"#31d6a0",wickDownColor:"#ff647c"});
+  if(window.ResizeObserver){
+   new ResizeObserver(()=>{
+    if(!liqChart)return;
+    const w=Math.max(300,el.getBoundingClientRect().width||el.clientWidth||300);
+    const h=Math.max(260,el.getBoundingClientRect().height||el.clientHeight||310);
+    liqChart.applyOptions({width:w,height:h});
+   }).observe(el);
+  }
+ }catch(err){
+  liqChart=null;liqSeries=null;
+  $("liqUpdated").textContent="Chart initialization failed · "+(err.message||err);
+  throw err;
+ }
 }
 function renderLiquidityCoins(){
  $("liquidityCoins").innerHTML=liqMarkets.map(m=>{const d=marketData[m.symbol];return '<button type="button" class="liq-coin '+(liqSelected===m.symbol?'active':'')+'" data-liq="'+m.symbol+'"><b>'+m.ticker+'</b><small>'+(d?fmt(d.price):m.name)+'</small></button>'}).join("");
@@ -424,7 +442,10 @@ function scanLiquidity(candles,pdh,pdl){
  return {pending,signal,activity};
 }
 async function refreshLiquidity(reset=false){
- if(liqBusy||!liqSeries)return;liqBusy=true;
+ if(liqBusy)return;
+ if(!liqSeries){$("liqUpdated").textContent="Chart is not initialized · switch tabs and retry";return}
+ liqBusy=true;
+ $("liqUpdated").textContent="Fetching "+liqSelected+" 15m candles…";
  try{
   const {rows,bounds}=await fetchLiquidityCandles(),now=bounds.now;
   const closed=rows.filter(c=>c.time+900<=now),forming=rows.filter(c=>c.time+900>now).slice(-1)[0];
@@ -464,7 +485,25 @@ function showStrategy(which){
  const liq=which==="liquidity";
  $("classicView").hidden=liq;$("liquidityView").hidden=!liq;
  $("classicTab").classList.toggle("active",!liq);$("liquidityTab").classList.toggle("active",liq);
- if(liq){if(!liqChart)initLiquidityChart();renderLiquidityCoins();refreshLiquidity(true)}
+ if(liq){
+  $("liqUpdated").textContent="Preparing chart…";
+  renderLiquidityCoins();
+  // Wait one paint so the formerly hidden chart panel has real dimensions before creating it.
+  requestAnimationFrame(()=>{
+   try{
+    if(!liqChart)initLiquidityChart();
+    if(liqChart){
+     const el=$("liquidityChart");
+     liqChart.applyOptions({width:Math.max(300,el.clientWidth||300),height:Math.max(260,el.clientHeight||310)});
+     refreshLiquidity(true);
+    }
+   }catch(err){
+    $("liqUpdated").textContent="Chart setup failed · "+(err.message||err);
+    $("liqMessage").textContent="Unable to initialize the liquidity chart. Reload the page and try again.";
+    console.error("Liquidity chart setup:",err);
+   }
+  });
+ }
 }
 $("classicTab").addEventListener("click",()=>showStrategy("classic"));
 $("liquidityTab").addEventListener("click",()=>showStrategy("liquidity"));
