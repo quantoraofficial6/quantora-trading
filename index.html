@@ -148,15 +148,28 @@ async function fetchCandles(){
  const j=await r.json();if(j.success===false)throw Error("Candle data request failed");
  return (j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time).filter((c,i,a)=>!i||c.time!==a[i-1].time);
 }
+let chartHasFit=false,livePriceLine=null;
 async function refreshChart(){
  if(chartBusy||!candleSeries)return;chartBusy=true;
  try{
   const candles=await fetchCandles();if(!candles.length)throw Error("No candle data");
   const sec=tfSeconds[timeframe],now=Math.floor(Date.now()/1000);
   const closed=candles.filter(c=>c.time+sec<=now);
+  const forming=candles.filter(c=>c.time+sec>now).slice(-1)[0];
   candleSeries.setData(closed.map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})));
-  chart.timeScale().fitContent();$("chartUpdated").textContent="Updated "+new Date().toLocaleTimeString();
-  const last=closed[closed.length-1];if(last){$("chartPrice").textContent=fmt(marketData[selected]?.price??last.close)}
+  if(forming){
+   candleSeries.update({time:forming.time,open:forming.open,high:forming.high,low:forming.low,close:forming.close});
+  }else if(closed.length){
+   const tick=marketData[selected]?.price;
+   if(Number.isFinite(tick)&&tick>0){
+    const last=closed[closed.length-1],bucket=Math.floor(now/sec)*sec;
+    const live={time:bucket,open:last.close,high:Math.max(last.close,tick),low:Math.min(last.close,tick),close:tick};
+    candleSeries.update(live);
+   }
+  }
+  if(!chartHasFit){chart.timeScale().fitContent();chartHasFit=true}
+  $("chartUpdated").textContent="Live chart · "+new Date().toLocaleTimeString();
+  const last=forming||closed[closed.length-1];if(last){$("chartPrice").textContent=fmt(marketData[selected]?.price??last.close)}
   updateStructure(closed);
   runStrategy(closed);
  }catch(e){$("chartUpdated").textContent="Chart unavailable · "+e.message;console.error(e)}
@@ -254,14 +267,14 @@ function updateStructure(c){
  const s=lows.filter(x=>x<=price).sort((a,b)=>b-a)[0],r=highs.filter(x=>x>=price).sort((a,b)=>a-b)[0];
  $("support").textContent=s?fmt(s):"—";$("resistance").textContent=r?fmt(r):"—";$("swingLows").textContent=lows.length;$("swingHighs").textContent=highs.length;
 }
-async function selectMarket(s){selected=s;renderMarkets();$("chartSymbol").textContent=s;$("chartUpdated").textContent="Loading "+s+"…";await refreshChart();const d=marketData[s];if(d)$("chartPrice").textContent=fmt(d.price)}
+async function selectMarket(s){selected=s;chartHasFit=false;renderMarkets();$("chartSymbol").textContent=s;$("chartUpdated").textContent="Loading "+s+"…";await refreshTickers();await refreshChart();const d=marketData[s];if(d)$("chartPrice").textContent=fmt(d.price)}
 document.querySelectorAll(".tf").forEach(b=>b.addEventListener("click",()=>{timeframe=b.dataset.tf;document.querySelectorAll(".tf").forEach(x=>x.classList.toggle("active",x===b));refreshChart()}));
 function tickClock(){$("clock").textContent=new Date().toLocaleTimeString()}
 $("refreshPrices")?.addEventListener("click",()=>refreshTickers());
 async function start(){
  tickClock();setInterval(tickClock,1000);initChart();
  await Promise.allSettled([refreshTickers(),refreshChart()]);
- setInterval(refreshTickers,10000);setInterval(refreshChart,30000);
+ setInterval(refreshTickers,10000);setInterval(refreshChart,5000);
 }
 start();
 </script>
