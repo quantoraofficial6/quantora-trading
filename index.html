@@ -377,7 +377,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
  const pushEvent=(side,kind,price,time,detail)=>{
   history.unshift({side,kind,price,time,detail});
   if(history.length>8)history.pop();
-  const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")||kind.includes("TRAILING SL HIT")?"STOP_LOSS_HIT":kind.includes("NEW RANGE")?"RANGE_UPDATE":"STATUS_SNAPSHOT";
+  const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")||kind.includes("TRAILING SL HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time;
   const tradeKey=["DRP",scanSymbol,scanTimeframe,activeEntryTime].join(":");
   const eventKey=["DRP",scanSymbol,scanTimeframe,eventType,time,Number(price).toFixed(6)].join(":");
@@ -397,16 +397,16 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      continue;
     }
     if(!pos.targetHit&&cur.high>=pos.target){
-     pos.targetHit=true;
+     pos.targetHit=true;pos.targetHitTime=cur.time;
      pushEvent("BUY","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position stays active; trailing stop and next target continue automatically.");
      lastEvent="TARGET";
     }
     if(cur.close>pos.rangeHigh){
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
      const nextSL=Math.max(pos.sl,lo),risk=cur.close-nextSL;
-     const recalculateTarget=pos.targetHit;
+     const recalculateTarget=pos.targetHit&&Number.isFinite(pos.targetHitTime)&&cur.time>pos.targetHitTime;
      pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
-     if(recalculateTarget&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;}
+     if(recalculateTarget&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;pos.targetHitTime=null;}
      pushEvent("BUY",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,recalculateTarget&&risk>0?"After the previous target was hit, this breakout formed the next range. Stop trailed and a fresh 2R target was calculated.":"New breakout range formed. Stop trailed only; target remains unchanged until it is hit.");
     }
    }else{
@@ -419,7 +419,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      continue;
     }
     if(!pos.targetHit&&cur.low<=pos.target){
-     pos.targetHit=true;
+     pos.targetHit=true;pos.targetHitTime=cur.time;
      pushEvent("SELL","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position stays active; trailing stop and next target continue automatically.");
      lastEvent="TARGET";
     }
@@ -428,7 +428,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      const nextSL=Math.min(pos.sl,hi),risk=nextSL-cur.close;
      const recalculateTarget=pos.targetHit;
      pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
-     if(recalculateTarget&&risk>0){pos.target=cur.close-2*risk;pos.targetHit=false;}
+     if(recalculateTarget&&risk>0){pos.target=cur.close-2*risk;pos.targetHit=false;pos.targetHitTime=null;}
      pushEvent("SELL",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,recalculateTarget&&risk>0?"After the previous target was hit, this breakdown formed the next range. Stop trailed and a fresh 2R target was calculated.":"New breakdown range formed. Stop trailed only; target remains unchanged until it is hit.");
     }
    }
