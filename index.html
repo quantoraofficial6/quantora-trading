@@ -42,7 +42,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 <div class="app">
 <header class="topbar">
  <div class="brand"><div class="brand-mark">Q</div><div><div class="brand-name">QUANT<span>ORA</span></div><div class="brand-sub">INTELLIGENT CRYPTO TERMINAL</div></div></div>
- <div class="top-right"><div class="live-pill"><i class="pulse"></i> LIVE MARKET</div><div class="clock" id="clock">--:--:--</div></div>
+ <div class="top-right"><div class="live-pill"><i class="pulse"></i> LIVE MARKET</div><button id="refreshPrices" class="tf" type="button" style="border:1px solid #34465f">↻ Refresh</button><div class="clock" id="clock">--:--:--</div></div>
 </header>
 <section class="welcome"><div><div class="eyebrow">MARKET OVERVIEW</div><h1>Trade with clarity.</h1><p>Live crypto and tokenized gold markets, precision charts and strategy-driven signals.</p></div><div class="market-status" id="connection">Connecting to Delta Exchange…</div></section>
 <section class="market-strip" id="marketStrip">
@@ -89,12 +89,31 @@ function initChart(){
  candleSeries=chart.addCandlestickSeries({upColor:"#31d6a0",downColor:"#ff647c",borderUpColor:"#31d6a0",borderDownColor:"#ff647c",wickUpColor:"#31d6a0",wickDownColor:"#ff647c"});
  new ResizeObserver(()=>{if(chart)chart.applyOptions({width:el.clientWidth,height:el.clientHeight})}).observe(el);
 }
+async function fetchAllTickers(){
+ const r=await fetch(API+"/v2/tickers?contract_types=perpetual_futures",{cache:"no-store",headers:{Accept:"application/json"}});
+ if(!r.ok)throw Error("Ticker API HTTP "+r.status);
+ const j=await r.json();
+ if(j.success===false)throw Error(j.error||"Ticker API returned an error");
+ const rows=Array.isArray(j.result)?j.result:(j.result?[j.result]:[]);
+ if(!rows.length)throw Error("Ticker API returned no markets");
+ const map={};
+ rows.forEach(t=>{
+  const symbol=t.symbol;
+  const price=Number(t.close??t.mark_price??t.spot_price);
+  if(symbol&&Number.isFinite(price)&&price>0){
+   map[symbol]={price,change:Number(t.ltp_change_24h??t.mark_change_24h??t.change_24h??t.change)};
+  }
+ });
+ return map;
+}
 async function fetchTicker(m){
- const r=await fetch(API+"/v2/tickers/"+encodeURIComponent(m),{cache:"no-store"});
- if(!r.ok)throw Error("Ticker "+r.status);
- const j=await r.json();const t=Array.isArray(j.result)?j.result[0]:j.result;
- if(!t)throw Error("Ticker unavailable");
- return {price:Number(t.close),change:Number(t.mark_change_24h??t.change_24h??t.change)};
+ const r=await fetch(API+"/v2/tickers/"+encodeURIComponent(m),{cache:"no-store",headers:{Accept:"application/json"}});
+ if(!r.ok)throw Error(m+" ticker HTTP "+r.status);
+ const j=await r.json(),t=Array.isArray(j.result)?j.result[0]:j.result;
+ if(!t)throw Error(m+" ticker unavailable");
+ const price=Number(t.close??t.mark_price??t.spot_price);
+ if(!Number.isFinite(price)||price<=0)throw Error(m+" price missing");
+ return {price,change:Number(t.ltp_change_24h??t.mark_change_24h??t.change_24h??t.change)};
 }
 function renderMarkets(){
  $("marketStrip").innerHTML=markets.map(m=>{
@@ -105,12 +124,22 @@ function renderMarkets(){
  document.querySelectorAll(".market-card[data-symbol]").forEach(el=>el.addEventListener("click",()=>selectMarket(el.dataset.symbol)));
 }
 async function refreshTickers(){
- const results=await Promise.allSettled(markets.map(async m=>[m.symbol,await fetchTicker(m.symbol)]));
- let ok=0;
- results.forEach(x=>{if(x.status==="fulfilled"){marketData[x.value[0]]=x.value[1];ok++}});
- renderMarkets();
- const d=marketData[selected];if(d){$("chartPrice").textContent=fmt(d.price);$("chartPrice").style.color="#e7bd70"}
- setConnection(ok?("Live · "+ok+"/"+markets.length+" markets connected"):"Market data unavailable",!ok);
+ try{
+  let snapshot={};
+  try{snapshot=await fetchAllTickers()}catch(e){console.warn("Bulk ticker request failed; trying individual symbols",e)}
+  const missing=markets.filter(m=>!snapshot[m.symbol]);
+  const fallback=await Promise.allSettled(missing.map(async m=>[m.symbol,await fetchTicker(m.symbol)]));
+  fallback.forEach(x=>{if(x.status==="fulfilled")snapshot[x.value[0]]=x.value[1]});
+  marketData={...marketData,...snapshot};
+  renderMarkets();
+  const liveCount=markets.filter(m=>Number.isFinite(marketData[m.symbol]?.price)).length;
+  const d=marketData[selected];if(d){$("chartPrice").textContent=fmt(d.price)}
+  setConnection(liveCount?("Live · "+liveCount+"/"+markets.length+" markets · refreshed "+new Date().toLocaleTimeString()):"Price feed unavailable · tap refresh",!liveCount);
+  if(!liveCount)throw Error("No live prices received. Check API/CORS or market availability.");
+ }catch(e){
+  console.error("Ticker refresh failed:",e);
+  setConnection("Price feed error · "+e.message,true);
+ }
 }
 async function fetchCandles(){
  const sec=tfSeconds[timeframe],end=Math.floor(Date.now()/1000),start=end-sec*240;
@@ -228,6 +257,7 @@ function updateStructure(c){
 async function selectMarket(s){selected=s;renderMarkets();$("chartSymbol").textContent=s;$("chartUpdated").textContent="Loading "+s+"…";await refreshChart();const d=marketData[s];if(d)$("chartPrice").textContent=fmt(d.price)}
 document.querySelectorAll(".tf").forEach(b=>b.addEventListener("click",()=>{timeframe=b.dataset.tf;document.querySelectorAll(".tf").forEach(x=>x.classList.toggle("active",x===b));refreshChart()}));
 function tickClock(){$("clock").textContent=new Date().toLocaleTimeString()}
+$("refreshPrices")?.addEventListener("click",()=>refreshTickers());
 async function start(){
  tickClock();setInterval(tickClock,1000);initChart();
  await Promise.allSettled([refreshTickers(),refreshChart()]);
