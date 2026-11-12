@@ -18,7 +18,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 .brand{display:flex;align-items:center;gap:12px}.brand-mark{width:40px;height:40px;border:1px solid #826b43;border-radius:12px;display:grid;place-items:center;color:var(--gold);font-weight:800;font-size:19px;background:linear-gradient(145deg,#1b2636,#0c111b);box-shadow:0 0 28px #d5a34b18}.brand-name{font-size:21px;font-weight:800;letter-spacing:3px}.brand-name span{color:var(--gold)}.brand-sub{font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:2px}
 .top-right{display:flex;align-items:center;gap:12px}.live-pill{display:flex;align-items:center;gap:8px;border:1px solid #23533f;background:#0d211c;color:#8ce7bf;padding:8px 12px;border-radius:30px;font-size:10px;letter-spacing:1px;font-weight:800}.pulse{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 0 4px #31d6a01c}.clock{font:11px var(--mono);color:var(--muted)}
 .welcome{display:flex;justify-content:space-between;align-items:flex-end;margin:24px 0 18px;gap:12px}.eyebrow{font-size:10px;letter-spacing:2px;color:var(--gold);font-weight:800}.welcome h1{font-size:25px;margin:6px 0 4px;letter-spacing:-.8px}.welcome p{font-size:12px;color:var(--muted);margin:0}.market-status{font-size:10px;color:var(--muted);text-align:right}
-.market-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.market-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:16px}
 .market-card{background:linear-gradient(145deg,#111c2c,#0c1320);border:1px solid var(--line);border-radius:14px;padding:15px 16px;min-width:0;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
 .market-card:hover,.market-card.active{border-color:#9a7845;transform:translateY(-1px);box-shadow:0 8px 28px #0005}.market-card.active:after{content:"";position:absolute;bottom:0;left:15px;right:15px;height:2px;background:var(--gold)}
 .coin-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.coin-id{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:800}.coin-icon{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#202b3c;color:var(--gold);font-size:11px;font-weight:800}.coin-symbol{color:var(--muted);font-size:10px;font-weight:600}.coin-price{font:600 19px var(--mono);margin:14px 0 5px;letter-spacing:-.7px}.coin-change{font:11px var(--mono)}.positive{color:var(--green)}.negative{color:var(--red)}.mini-note{font-size:9px;color:var(--muted);margin-top:10px}
@@ -44,7 +44,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
  <div class="brand"><div class="brand-mark">Q</div><div><div class="brand-name">QUANT<span>ORA</span></div><div class="brand-sub">INTELLIGENT CRYPTO TERMINAL</div></div></div>
  <div class="top-right"><div class="live-pill"><i class="pulse"></i> LIVE MARKET</div><div class="clock" id="clock">--:--:--</div></div>
 </header>
-<section class="welcome"><div><div class="eyebrow">MARKET OVERVIEW</div><h1>Trade with clarity.</h1><p>Live market data, precision charts and your strategy-driven signals.</p></div><div class="market-status" id="connection">Connecting to Delta Exchange…</div></section>
+<section class="welcome"><div><div class="eyebrow">MARKET OVERVIEW</div><h1>Trade with clarity.</h1><p>Live crypto and tokenized gold markets, precision charts and strategy-driven signals.</p></div><div class="market-status" id="connection">Connecting to Delta Exchange…</div></section>
 <section class="market-strip" id="marketStrip">
  <div class="market-card"><div class="muted">Loading markets…</div></div>
 </section>
@@ -73,7 +73,8 @@ const markets=[
  {symbol:"BTCUSD",name:"Bitcoin",ticker:"BTC",icon:"₿"},
  {symbol:"ETHUSD",name:"Ethereum",ticker:"ETH",icon:"◆"},
  {symbol:"SOLUSD",name:"Solana",ticker:"SOL",icon:"◎"},
- {symbol:"XRPUSD",name:"XRP",ticker:"XRP",icon:"X"}
+ {symbol:"XRPUSD",name:"XRP",ticker:"XRP",icon:"X"},
+ {symbol:"XAUTUSD",name:"Tether Gold",ticker:"GOLD",icon:"Au"}
 ];
 let selected="BTCUSD",timeframe="2h",chart=null,candleSeries=null,chartBusy=false;
 let marketData={};
