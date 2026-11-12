@@ -407,7 +407,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      const recalculateTarget=pos.targetHit&&Number.isFinite(pos.targetHitTime)&&cur.time>pos.targetHitTime;
      pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
      if(recalculateTarget&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;pos.targetHitTime=null;}
-     pushEvent("BUY",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,recalculateTarget&&risk>0?"After the previous target was hit, this breakout formed the next range. Stop trailed and a fresh 2R target was calculated.":"New breakout range formed. Stop trailed only; target remains unchanged until it is hit.");
+     pushEvent("BUY",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,"");
     }
    }else{
     if(cur.close>pos.sl){
@@ -426,10 +426,10 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
     if(cur.close<pos.rangeLow){
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
      const nextSL=Math.min(pos.sl,hi),risk=nextSL-cur.close;
-     const recalculateTarget=pos.targetHit;
+     const recalculateTarget=pos.targetHit&&Number.isFinite(pos.targetHitTime)&&cur.time>pos.targetHitTime;
      pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
      if(recalculateTarget&&risk>0){pos.target=cur.close-2*risk;pos.targetHit=false;pos.targetHitTime=null;}
-     pushEvent("SELL",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,recalculateTarget&&risk>0?"After the previous target was hit, this breakdown formed the next range. Stop trailed and a fresh 2R target was calculated.":"New breakdown range formed. Stop trailed only; target remains unchanged until it is hit.");
+     pushEvent("SELL",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,"");
     }
    }
   }else{
@@ -454,7 +454,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   const isBuy=pos.side==="BUY";
   $("signalState").textContent=pos.targetHit?(pos.side+" · TARGET HIT · TRAILING"):pos.side;
   $("signalState").style.color=isBuy?"#31d6a0":"#ff647c";
-  $("signalReason").textContent=(pos.targetHit?"TARGET HIT. Position remains active; new ranges trail the stop and recalculate the next target. ":"")+(isBuy?"Two-green-candle breakout active. ":"Two-red-candle breakdown active. ")+"Signals use closed "+timeframe+" candles; opposite signal appears when trailing SL is breached on candle close.";
+  $("signalReason").textContent=(pos.targetHit?"TARGET HIT. Position remains active; the next eligible range break recalculates the target. ":"")+(isBuy?"Two-green-candle breakout active. ":"Two-red-candle breakdown active. ")+"Signals use closed "+timeframe+" candles; opposite signal appears when trailing SL is breached on candle close.";
   $("entry").textContent=fmt(pos.entry);$("stop").textContent=fmt(pos.sl);$("target").textContent=fmt(pos.target);$("rr").textContent="1 : 2";
   addStrategyLine(pos.sl,"#ff647c","TRAILING STOP");
   addStrategyLine(pos.target,"#31d6a0",pos.targetHit?"NEXT TARGET":"2R TARGET");
