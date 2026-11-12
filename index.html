@@ -243,13 +243,14 @@ async function refreshTickers(){
   setConnection("Price feed error · "+e.message,true);
  }
 }
-async function fetchCandles(){
- const sec=tfSeconds[timeframe],end=Math.floor(Date.now()/1000),start=end-sec*240;
- const url=API+"/v2/history/candles?resolution="+timeframe+"&symbol="+encodeURIComponent(selected)+"&start="+start+"&end="+end;
+async function fetchCandlesFor(symbol,tf,limit=240){
+ const sec=tfSeconds[tf],end=Math.floor(Date.now()/1000),start=end-sec*limit;
+ const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(symbol)+"&start="+start+"&end="+end;
  const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("Candle API "+r.status);
  const j=await r.json();if(j.success===false)throw Error("Candle data request failed");
  return (j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time).filter((c,i,a)=>!i||c.time!==a[i-1].time);
 }
+async function fetchCandles(){return fetchCandlesFor(selected,timeframe,240)}
 let chartHasFit=false,livePriceLine=null;
 async function refreshChart(){
  if(chartBusy||!candleSeries)return;chartBusy=true;
@@ -286,7 +287,7 @@ function priceLine(price,color,title,style=2){
 let strategyPriceLines=[];
 function clearStrategyLines(){strategyPriceLines.forEach(x=>{try{candleSeries.removePriceLine(x)}catch(_){}});strategyPriceLines=[]}
 function addStrategyLine(p,color,label,style=2){const x=priceLine(p,color,label,style);if(x)strategyPriceLines.push(x)}
-function runStrategy(candles){
+function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=timeframe){
  const history=[];
  let pos=null,lastEvent=null;
  const green=x=>x.close>x.open,red=x=>x.close<x.open;
@@ -295,9 +296,9 @@ function runStrategy(candles){
   if(history.length>8)history.pop();
   const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")||kind.includes("TRAILING SL HIT")?"STOP_LOSS_HIT":kind.includes("NEW RANGE")?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time;
-  const tradeKey=["DRP",selected,timeframe,activeEntryTime].join(":");
-  const eventKey=["DRP",selected,timeframe,eventType,time,Number(price).toFixed(6)].join(":");
-  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:selected,timeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
+  const tradeKey=["DRP",scanSymbol,scanTimeframe,activeEntryTime].join(":");
+  const eventKey=["DRP",scanSymbol,scanTimeframe,eventType,time,Number(price).toFixed(6)].join(":");
+  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
 
  };
  for(let i=1;i<candles.length;i++){
@@ -362,6 +363,7 @@ function runStrategy(candles){
    }
   }
  }
+ if(!silent){
  clearStrategyLines();
  if(pos){
   const isBuy=pos.side==="BUY";
@@ -379,6 +381,7 @@ function runStrategy(candles){
   $("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";
  }
  $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'</div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
+ }
 }
 function updateStructure(c){
  const highs=[],lows=[];
@@ -632,10 +635,28 @@ $("liquidityTab").addEventListener("click",()=>showStrategy("liquidity"));
 
 function tickClock(){$("clock").textContent=new Date().toLocaleTimeString()}
 $("refreshPrices")?.addEventListener("click",()=>refreshTickers());
+
+let backgroundScanBusy=false,backgroundScanIndex=0;
+const strategyScanPairs=markets.flatMap(m=>Object.keys(tfSeconds).map(tf=>({symbol:m.symbol,tf})));
+async function scanAllMarketsAndTimeframes(){
+ if(backgroundScanBusy)return;
+ backgroundScanBusy=true;
+ try{
+  const pair=strategyScanPairs[backgroundScanIndex++%strategyScanPairs.length];
+  const candles=await fetchCandlesFor(pair.symbol,pair.tf,240);
+  const now=Math.floor(Date.now()/1000),sec=tfSeconds[pair.tf];
+  const closed=candles.filter(c=>c.time+sec<=now);
+  if(closed.length>=2)runStrategy(closed,true,pair.symbol,pair.tf);
+  const stamp=new Date().toLocaleTimeString();
+  $("historyConnection").textContent="Connected · scanning all markets/timeframes · "+pair.symbol+" "+pair.tf+" · "+stamp;
+ }catch(e){console.warn("Background strategy scan:",e)}
+ finally{backgroundScanBusy=false}
+}
+
 async function start(){
  tickClock();setInterval(tickClock,1000);initChart();loadTradeHistory();setInterval(loadTradeHistory,30000);
  await Promise.allSettled([refreshTickers(),refreshChart()]);
- setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
+ setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
 }
 start();
 </script>
