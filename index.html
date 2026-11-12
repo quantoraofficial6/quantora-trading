@@ -135,7 +135,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 </div>
 
 <div class="journal-modal" id="tradeJournalModal" hidden><div class="journal-shell"><div class="journal-modal-head"><div><div class="history-trade-title">QUANTORA · TRADE JOURNAL</div><div class="history-muted">Complete signal and trade-event history</div></div><button type="button" id="tradeJournalClose" class="journal-close">✕ Close</button></div>
-<section class="trade-history-panel" id="tradeHistoryPanel"><div class="trade-history-head"><div><h2>TRADE HISTORY · SUPABASE</h2><div class="history-muted" id="historyConnection">Connecting trade database…</div></div><div class="history-actions"><button type="button" id="historyRefresh">↻ Refresh</button></div></div><div class="history-filters"><div class="history-filter"><label for="historySymbolFilter">COIN / MARKET</label><select id="historySymbolFilter"><option value="ALL">All coins</option><option value="BTCUSD">BTC · Bitcoin</option><option value="ETHUSD">ETH · Ethereum</option><option value="SOLUSD">SOL · Solana</option><option value="XRPUSD">XRP</option><option value="XAUTUSD">GOLD · Tether Gold</option></select></div><div class="history-filter"><label for="historyTimeframeFilter">TIMEFRAME</label><select id="historyTimeframeFilter"><option value="ALL">All timeframes</option><option value="1m">1 Minute</option><option value="5m">5 Minutes</option><option value="15m">15 Minutes</option><option value="1h">1 Hour</option><option value="2h">2 Hours</option><option value="4h">4 Hours</option><option value="1d">1 Day</option></select></div></div><div class="history-stats"><span>ALL EVENTS: <b id="historyTotal">—</b></span><span>ENTRIES: <b id="historyEntries">—</b></span><span>TARGETS: <b id="historyTargets">—</b></span><span>SL HITS: <b id="historyStops">—</b></span></div><div class="history-groups" id="historyRows"><div class="history-muted">Loading trade history…</div></div></section></div></div>
+<section class="trade-history-panel" id="tradeHistoryPanel"><div class="trade-history-head"><div><h2>TRADE HISTORY</h2><div class="history-muted" id="historyConnection">Connected · automatic trade saving</div></div><div class="history-actions"><button type="button" id="historyRefresh">↻ Refresh</button></div></div><div class="history-filters"><div class="history-filter"><label for="historySymbolFilter">COIN / MARKET</label><select id="historySymbolFilter"><option value="ALL">All coins</option><option value="BTCUSD">BTC · Bitcoin</option><option value="ETHUSD">ETH · Ethereum</option><option value="SOLUSD">SOL · Solana</option><option value="XRPUSD">XRP</option><option value="XAUTUSD">GOLD · Tether Gold</option></select></div><div class="history-filter"><label for="historyTimeframeFilter">TIMEFRAME</label><select id="historyTimeframeFilter"><option value="ALL">All timeframes</option><option value="1m">1 Minute</option><option value="5m">5 Minutes</option><option value="15m">15 Minutes</option><option value="1h">1 Hour</option><option value="2h">2 Hours</option><option value="4h">4 Hours</option><option value="1d">1 Day</option></select></div></div><div class="history-stats"><span>ALL EVENTS: <b id="historyTotal">—</b></span><span>ENTRIES: <b id="historyEntries">—</b></span><span>TARGETS: <b id="historyTargets">—</b></span><span>SL HITS: <b id="historyStops">—</b></span></div><div class="history-groups" id="historyRows"><div class="history-muted">Loading trade history…</div></div></section></div></div>
 <script>
 const API="https://api.india.delta.exchange";
 const markets=[
@@ -158,7 +158,7 @@ async function saveTradeEvent(ev){
  try{
   const r=await fetch(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(ev)});
   if(!r.ok){tradeLogSeen.delete(ev.event_key);throw Error("DB write "+r.status+" "+(await r.text()).slice(0,180))}
-  $("historyConnection").textContent="Connected · trade events auto-saving";
+
  }catch(e){tradeLogSeen.delete(ev.event_key);$("historyConnection").textContent="Database save error · "+e.message;console.error("Trade history save:",e)}
 }
 function getJournalQuantities(){
@@ -186,7 +186,7 @@ async function loadTradeHistory(){
    const batch=await r.json();allRows.push(...batch);if(batch.length<batchSize)break;offset+=batchSize;
   }
   const rows=allRows;
-  $("historyConnection").textContent="Live database · "+rows.length+" events · auto refresh every 5 minutes";
+  $("historyConnection").textContent="Connected · trade history ready";
   $("historyTotal").textContent=rows.length;
   $("historyEntries").textContent=rows.filter(x=>x.event_type==="ENTRY").length;
   $("historyTargets").textContent=rows.filter(x=>x.event_type==="TARGET_HIT").length;
@@ -732,8 +732,7 @@ async function scanAllMarketsAndTimeframes(){
   const now=Math.floor(Date.now()/1000),sec=tfSeconds[pair.tf];
   const closed=candles.filter(c=>c.time+sec<=now);
   if(closed.length>=2)runStrategy(closed,true,pair.symbol,pair.tf);
-  const stamp=new Date().toLocaleTimeString();
-  $("historyConnection").textContent="Connected · scanning all markets/timeframes · "+pair.symbol+" "+pair.tf+" · "+stamp;
+
  }catch(e){console.warn("Background strategy scan:",e)}
  finally{backgroundScanBusy=false}
 }
