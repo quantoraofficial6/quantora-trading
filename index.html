@@ -36,6 +36,9 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 .footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#62728a;font-size:9px;padding:20px 2px 0}
 @media(max-width:950px){.workspace{grid-template-columns:1fr}.signal-panel{min-height:0}.market-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.lower-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.app{padding:13px 12px 24px}.topbar{padding-bottom:15px}.brand-name{font-size:18px}.brand-mark{width:35px;height:35px}.clock{display:none}.welcome{margin:20px 0 14px}.welcome h1{font-size:21px}.market-strip{gap:8px}.market-card{padding:12px}.coin-price{font-size:16px}.panel-head{padding:14px}.chart-wrap{height:315px;padding:7px 4px 0}.chart-tools{width:100%}.chart-tools .tf{flex:1}.levels-row{grid-template-columns:repeat(2,1fr);padding:12px}.signal-main{padding:17px 15px}.signal-grid{padding:0 15px 15px}.strategy-note{margin:0 15px 15px}}
+
+/* Keep strategy explanations hidden; preserve the signal engine and dashboard data. */
+.signal-desc,.strategy-note{display:none!important}
 </style>
 </head>
 <body>
