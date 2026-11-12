@@ -169,6 +169,7 @@ function saveJournalQuantity(key,value){
  try{localStorage.setItem("quantora_journal_quantities",JSON.stringify(all))}catch(e){console.warn("Could not save journal quantity",e)}
 }
 function journalNum(v){const n=Number(v);return Number.isFinite(n)?n:null}
+function formatJournalTime(value,full=false){return new Date(value).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",dateStyle:full?"full":"medium",timeStyle:"medium",hour12:true})}
 async function loadTradeHistory(){
  const refreshBtn=$("historyRefresh");
  if(refreshBtn){refreshBtn.disabled=true;refreshBtn.textContent="Loading…"}
@@ -215,7 +216,7 @@ async function loadTradeHistory(){
    const fmtSigned=v=>(v>0?"+":"")+fmt(v);
    const eventCards=events.map(e=>{
     let label=e.event_type==="ENTRY"?"ENTRY / TRADE OPENED":e.event_type==="RANGE_UPDATE"?"RANGE BREAK · STOP TRAILED":e.event_type==="TARGET_HIT"?"TARGET REACHED · TRADE CONTINUES":e.event_type==="STOP_LOSS_HIT"?"STOP LOSS HIT":e.event_type==="TRADE_CLOSED"?"TRADE CLOSED":e.event_type==="SETUP_CANCELLED"?"SETUP CANCELLED":e.event_type==="SIGNAL_BLOCKED"?"SIGNAL FILTERED":"TRADE UPDATE";
-    const candle=e.candle_time||e.occurred_at,localTime=new Date(candle).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"medium"});
+    const candle=e.candle_time||e.occurred_at,localTime=formatJournalTime(candle,false);
     const priceLabel=e.event_type==="TARGET_HIT"?"Target level touched":e.event_type==="STOP_LOSS_HIT"?"SL-trigger candle close / recorded exit":e.event_type==="RANGE_UPDATE"?"Breakout candle close":e.event_type==="ENTRY"?"Signal candle close":"Recorded market price";
     const levelBits=[];
     if(e.event_type==="ENTRY"||e.event_type==="RANGE_UPDATE"||e.event_type==="STOP_LOSS_HIT"){
@@ -227,7 +228,7 @@ async function loadTradeHistory(){
     }
     return '<div class="history-event-card"><div class="history-event-top"><b>'+label+'</b><time>'+localTime+'</time></div><div class="history-event-values"><span>'+priceLabel+': <strong>'+fmt(e.price)+'</strong></span>'+levelBits.map(v=>'<span>'+v+'</span>').join("")+'</div><div class="history-muted">'+String(e.details||"")+'</div></div>';
    }).join("");
-   const entryTimeText=new Date(entryAt).toLocaleString("en-IN",{dateStyle:"full",timeStyle:"medium"});
+   const entryTimeText=formatJournalTime(entryAt,true);
    const initSL=entryEvent.stop_loss,initTarget=entryEvent.target_price;
    const quantityBlock='<div class="journal-pnl"><div class="journal-qty"><label>QUANTITY</label><input class="journal-qty-input" type="number" min="0" step="any" inputmode="decimal" data-trade-key="'+encodeURIComponent(key)+'" value="'+String(qtyRaw)+'" aria-label="Quantity for '+entryEvent.symbol+' '+entryEvent.side+' trade"></div><div class="journal-result"><small>POINTS · ENTRY TO EXIT</small><b class="'+(points==null?"":points>=0?"positive":"negative")+'">'+(points==null?"Pending SL exit":fmtSigned(points)+" pts")+'</b></div><div class="journal-result"><small>PROFIT / LOSS</small><b class="'+resultClass+'">'+(pnl==null?"—":(pnl>0?"+":"")+fmt(pnl))+'</b></div><div class="journal-result"><small>RETURN %</small><b class="'+(pct==null?"":pct>=0?"positive":"negative")+'">'+(pct==null?"—":(pct>0?"+":"")+pct.toFixed(2)+"%")+'</b></div></div><div class="history-muted journal-calc-note">'+(isClosed?"Calculated from entry price and recorded SL-exit price.":"Trade is still active; final P&L will appear after SL exit.")+' · P&L = points × quantity; percentage is based on entry price, before fees/leverage/contract multiplier.</div>';
    return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div></div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
