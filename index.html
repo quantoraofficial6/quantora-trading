@@ -377,17 +377,17 @@ function scanLiquidity(candles,pdh,pdl){
   if(pending?.stage==="CONFIRM"){
    if(pending.side==="BUY"){
     if(c.low>pdl&&c.close>pdl){pending={side:"BUY",stage:"BREAK",level:c.high,sweep:pending.sweep,confirm:c};activity="Low swept. Confirmation candle formed; waiting for its high to break on candle close."}
-    else if(c.low<=pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="A fresh previous-day-low sweep is being checked."}
+    else if(c.low<pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="A fresh strict PDL sweep is being checked."}
     else{pending=null;activity="Setup invalidated before confirmation; waiting for another sweep."}
    }else{
     if(c.high<pdh&&c.close<pdh){pending={side:"SELL",stage:"BREAK",level:c.low,sweep:pending.sweep,confirm:c};activity="High swept. Confirmation candle formed; waiting for its low to break on candle close."}
-    else if(c.high>=pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="A fresh previous-day-high sweep is being checked."}
+    else if(c.high>pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="A fresh strict PDH sweep is being checked."}
     else{pending=null;activity="Setup invalidated before confirmation; waiting for another sweep."}
    }
    continue;
   }
-  if(c.low<=pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="Previous day low swept and reclaimed. Waiting for the next clean candle."}
-  else if(c.high>=pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="Previous day high swept and rejected. Waiting for the next clean candle."}
+  if(c.low<pdl&&c.close>pdl){pending={side:"BUY",stage:"CONFIRM",sweep:c};activity="Valid BUY sweep: candle wicked strictly below PDL and closed back above it. Waiting for the next clean candle."}
+  else if(c.high>pdh&&c.close<pdh){pending={side:"SELL",stage:"CONFIRM",sweep:c};activity="Valid SELL sweep: candle wicked strictly above PDH and closed back below it. Waiting for the next clean candle."}
  }
  return {pending,signal,activity};
 }
