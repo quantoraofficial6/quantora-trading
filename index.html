@@ -46,6 +46,12 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 @media(max-width:950px){.liquidity-layout{grid-template-columns:1fr}.liquidity-chart{height:350px}}
 @media(max-width:560px){.strategy-switch{margin:14px 0}.strategy-tab{flex:1;padding:10px 8px;font-size:10px}.liquidity-coins{grid-template-columns:repeat(3,minmax(0,1fr));padding:10px;gap:7px}.liquidity-layout{padding:0 9px}.liquidity-chart{height:310px}.liq-status{padding:15px}.liq-levels{padding:0 12px 12px}}
 
+
+.sebi-ticker{margin:12px 0 0;overflow:hidden;border:1px solid #59482d;border-radius:9px;background:linear-gradient(90deg,#211b12,#151b26,#211b12);color:#e7bd70;padding:9px 0;white-space:nowrap;font:600 10px var(--mono);letter-spacing:.7px}
+.sebi-ticker-track{display:inline-block;padding-left:100%;animation:sebiTickerScroll 22s linear infinite}
+.sebi-ticker-track span{padding-right:70px}
+@keyframes sebiTickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+@media(prefers-reduced-motion:reduce){.sebi-ticker-track{animation:none;padding-left:12px}}
 </style>
 </head>
 <body>
@@ -54,6 +60,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
  <div class="brand"><div class="brand-mark">Q</div><div><div class="brand-name">QUANT<span>ORA</span></div><div class="brand-sub">INTELLIGENT CRYPTO TERMINAL</div></div></div>
  <div class="top-right"><div class="live-pill"><i class="pulse"></i> LIVE MARKET</div><button id="refreshPrices" class="tf" type="button" style="border:1px solid #34465f">↻ Refresh</button><div class="clock" id="clock">--:--:--</div></div>
 </header>
+<div class="sebi-ticker" id="sebiDisclaimerTicker" role="note" aria-label="Investment disclaimer"><div class="sebi-ticker-track"><span>I AM NOT A SEBI-REGISTERED INVESTMENT ADVISER. TRADING INVOLVES RISK. PLEASE DO YOUR OWN RESEARCH.</span><span>I AM NOT A SEBI-REGISTERED INVESTMENT ADVISER. TRADING INVOLVES RISK. PLEASE DO YOUR OWN RESEARCH.</span></div></div>
 <section class="welcome"><div><div class="eyebrow">MARKET OVERVIEW</div><h1>Trade with clarity.</h1><p>Real-Time Markets. Precision Signals. Smarter Trading.</p></div><div class="market-status" id="connection">Connecting to Delta Exchange…</div></section>
 <section class="strategy-switch" aria-label="Strategy selector">
  <button class="strategy-tab active" id="classicTab" type="button">Dynamic Range Pro</button>
