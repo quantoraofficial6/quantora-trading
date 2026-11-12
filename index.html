@@ -56,14 +56,14 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
  </section>
  <aside class="panel signal-panel">
   <div class="panel-head"><div><div class="panel-title">STRATEGY SIGNAL</div><div class="panel-caption">RULE-BASED MARKET ANALYSIS</div></div><span class="live-pill">ENGINE READY</span></div>
-  <div class="signal-main"><div class="signal-label">CURRENT SETUP</div><div class="signal-state"><i class="signal-dot"></i><strong id="signalState">WAIT</strong></div><div class="signal-desc" id="signalReason">Your custom strategy will be connected here. No trade signal is generated until its rules are configured.</div></div>
-  <div class="signal-grid"><div class="signal-level"><span>ENTRY PRICE</span><b id="entry">—</b></div><div class="signal-level"><span>STOP LOSS</span><b id="stop">—</b></div><div class="signal-level"><span>TARGET</span><b id="target">—</b></div><div class="signal-level"><span>RISK / REWARD</span><b id="rr">—</b></div></div>
-  <div class="strategy-note"><b>Strategy not configured</b><br>Tell me your exact entry, exit, confirmation and risk rules. QUANTORA will then calculate signals from closed candles only.</div>
+  <div class="signal-main"><div class="signal-label">CURRENT SETUP</div><div class="signal-state"><i class="signal-dot"></i><strong id="signalState">WAIT</strong></div><div class="signal-desc" id="signalReason">Waiting for two consecutive candles to confirm a range breakout.</div></div>
+  <div class="signal-grid"><div class="signal-level"><span>ENTRY PRICE</span><b id="entry">—</b></div><div class="signal-level"><span>STOP LOSS</span><b id="stop">—</b></div><div class="signal-level"><span>TARGET</span><b id="target">—</b></div><div class="signal-level"><span>RISK / REWARD</span><b id="rr">1 : 2</b></div></div>
+  <div class="strategy-note"><b>Two-candle range breakout · All timeframes</b><br>Two green candles with the second closing above the first high = BUY. Two red candles with the second closing below the first low = SELL. Range trails using the previous range’s second candle + breakout candle. SL is confirmed by candle close; SL hit reverses immediately at that close. Initial target: 2R.</div>
  </aside>
 </main>
 <section class="lower-grid">
  <div class="panel"><div class="panel-head"><div><div class="panel-title">MARKET STRUCTURE</div><div class="panel-caption">AUTOMATIC SWING LEVELS · SELECTED MARKET</div></div></div><div class="levels-row"><div class="metric"><span>NEAREST SUPPORT</span><b id="support">—</b></div><div class="metric"><span>NEAREST RESISTANCE</span><b id="resistance">—</b></div><div class="metric"><span>SWING LOWS</span><b id="swingLows">—</b></div><div class="metric"><span>SWING HIGHS</span><b id="swingHighs">—</b></div></div></div>
- <div class="panel"><div class="panel-head"><div><div class="panel-title">SIGNAL ACTIVITY</div><div class="panel-caption">YOUR RECENT STRATEGY ALERTS</div></div></div><div class="feed" id="signalFeed"><div class="feed-empty">No strategy signals yet. Your signal history will appear here.</div></div></div>
+ <div class="panel"><div class="panel-head"><div><div class="panel-title">SIGNAL ACTIVITY</div><div class="panel-caption">YOUR RECENT STRATEGY ALERTS</div></div></div><div class="feed" id="signalFeed"><div class="feed-empty">Waiting for a confirmed two-candle setup.</div></div></div>
 </section>
 <footer class="footer"><span>QUANTORA TERMINAL · VERSION 1.0</span><span>Market data by Delta Exchange public API · No orders are placed</span><span>For research and education only. Not financial advice.</span></footer>
 </div>
@@ -128,9 +128,92 @@ async function refreshChart(){
   chart.timeScale().fitContent();$("chartUpdated").textContent="Updated "+new Date().toLocaleTimeString();
   const last=closed[closed.length-1];if(last){$("chartPrice").textContent=fmt(marketData[selected]?.price??last.close)}
   updateStructure(closed);
+  runStrategy(closed);
  }catch(e){$("chartUpdated").textContent="Chart unavailable · "+e.message;console.error(e)}
  finally{chartBusy=false}
 }
+
+let strategyLines=[];
+function priceLine(price,color,title,style=2){
+ if(!candleSeries||!Number.isFinite(price))return null;
+ return candleSeries.createPriceLine({price,color,lineWidth:1,lineStyle:style,axisLabelVisible:true,title});
+}
+let strategyPriceLines=[];
+function clearStrategyLines(){strategyPriceLines.forEach(x=>{try{candleSeries.removePriceLine(x)}catch(_){}});strategyPriceLines=[]}
+function addStrategyLine(p,color,label,style=2){const x=priceLine(p,color,label,style);if(x)strategyPriceLines.push(x)}
+function runStrategy(candles){
+ const history=[];
+ let pos=null, lastEvent=null;
+ const green=x=>x.close>x.open, red=x=>x.close<x.open;
+ const pushEvent=(side,kind,price,time,detail)=>{
+  history.unshift({side,kind,price,time,detail});
+  if(history.length>8)history.pop();
+ };
+ for(let i=1;i<candles.length;i++){
+  const prev=candles[i-1],cur=candles[i];
+  if(pos){
+   if(pos.side==="BUY"){
+    if(cur.close<pos.sl){
+     pushEvent("SELL","REVERSE · BUY SL HIT",cur.close,cur.time,"Reverse confirmed on this candle close");
+     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
+     pos={side:"SELL",entry:cur.close,sl:hi,target:cur.close-2*(hi-cur.close),rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time};
+     lastEvent="SELL";
+    }else if(cur.high>=pos.target){
+     pushEvent("BUY","TARGET HIT",pos.target,cur.time,"2R target reached");pos=null;lastEvent="TARGET";
+    }else if(cur.close>pos.rangeHigh){
+     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
+     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=lo;pos.second=cur;
+     pushEvent("BUY","RANGE TRAILED",cur.close,cur.time,"New range: previous range second candle + breakout candle");
+    }
+   }else{
+    if(cur.close>pos.sl){
+     pushEvent("BUY","REVERSE · SELL SL HIT",cur.close,cur.time,"Reverse confirmed on this candle close");
+     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
+     pos={side:"BUY",entry:cur.close,sl:lo,target:cur.close+2*(cur.close-lo),rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time};
+     lastEvent="BUY";
+    }else if(cur.low<=pos.target){
+     pushEvent("SELL","TARGET HIT",pos.target,cur.time,"2R target reached");pos=null;lastEvent="TARGET";
+    }else if(cur.close<pos.rangeLow){
+     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
+     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=hi;pos.second=cur;
+     pushEvent("SELL","RANGE TRAILED",cur.close,cur.time,"New range: previous range second candle + breakout candle");
+    }
+   }
+  }else{
+   if(green(prev)&&green(cur)&&cur.close>prev.high){
+    const hi=Math.max(prev.high,cur.high),lo=Math.min(prev.low,cur.low),risk=cur.close-lo;
+    if(risk>0){
+     pos={side:"BUY",entry:cur.close,sl:lo,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time};
+     pushEvent("BUY","BUY ENTRY",cur.close,cur.time,"Two green candles · second closed above first high");lastEvent="BUY";
+    }
+   }else if(red(prev)&&red(cur)&&cur.close<prev.low){
+    const hi=Math.max(prev.high,cur.high),lo=Math.min(prev.low,cur.low),risk=hi-cur.close;
+    if(risk>0){
+     pos={side:"SELL",entry:cur.close,sl:hi,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time};
+     pushEvent("SELL","SELL ENTRY",cur.close,cur.time,"Two red candles · second closed below first low");lastEvent="SELL";
+    }
+   }
+  }
+ }
+ clearStrategyLines();
+ if(pos){
+  const isBuy=pos.side==="BUY";
+  $("signalState").textContent=pos.side;
+  $("signalState").style.color=isBuy?"#31d6a0":"#ff647c";
+  $("signalReason").textContent=(isBuy?"Two-green-candle breakout active. ":"Two-red-candle breakdown active. ")+"Signals use closed "+timeframe+" candles; reverse occurs immediately when SL is breached on candle close.";
+  $("entry").textContent=fmt(pos.entry);$("stop").textContent=fmt(pos.sl);$("target").textContent=fmt(pos.target);$("rr").textContent="1 : 2";
+  addStrategyLine(pos.sl,isBuy?"#ff647c":"#ff647c","STOP LOSS");
+  addStrategyLine(pos.target,"#31d6a0","2R TARGET");
+  addStrategyLine(isBuy?pos.rangeHigh:pos.rangeLow,"#e7bd70","ACTIVE RANGE",1);
+ }else{
+  $("signalState").textContent=lastEvent==="TARGET"?"TARGET HIT":"WAIT";
+  $("signalState").style.color=lastEvent==="TARGET"?"#e7bd70":"#e7bd70";
+  $("signalReason").textContent=lastEvent==="TARGET"?"2R target reached. Waiting for the next confirmed two-candle setup.":"No active position. Waiting for two consecutive candles and a confirmed close beyond the first candle’s high/low.";
+  $("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";
+ }
+ $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'</div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
+}
+
 function updateStructure(c){
  const highs=[],lows=[];
  for(let i=2;i<c.length-2;i++){
