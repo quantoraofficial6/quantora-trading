@@ -61,7 +61,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 .journal-qty-input{width:100%;min-width:0;background:#142338;color:#f1f5f9;border:1px solid #52627a;border-radius:7px;padding:9px 7px;font:13px "DM Mono",monospace}
 .journal-qty-input:focus{outline:1px solid #e7bd70;border-color:#e7bd70}
 .journal-result b{display:block;font:700 13px "DM Mono",monospace;overflow-wrap:anywhere}
-.journal-calc-note{margin:4px 0 12px;font-size:10px;line-height:1.5}
+.journal-calc-note{margin:4px 0 12px;font-size:10px;line-height:1.5}.journal-live-price{margin-top:7px;color:#9aabc0;font:11px "DM Mono",monospace}.journal-live-price span{margin-left:7px;font-weight:700}
 @media(max-width:620px){.journal-pnl{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* QUANTORA premium responsive visual layer — presentation only; strategy, data and API logic untouched */
@@ -315,6 +315,18 @@ function saveJournalQuantity(key,value){
 }
 function journalNum(v){const n=Number(v);return Number.isFinite(n)?n:null}
 function formatJournalTime(value,full=false){return new Date(value).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",dateStyle:full?"full":"medium",timeStyle:"medium",hour12:true})}
+function updateJournalLivePrices(){
+ document.querySelectorAll(".journal-live-price[data-live-symbol]").forEach(el=>{
+  const symbol=el.dataset.liveSymbol,entry=Number(el.dataset.entry),live=marketData[symbol]?.price;
+  const pct=entry>0&&Number.isFinite(live)?(live-entry)/entry*100:null;
+  const span=el.querySelector("span");
+  el.childNodes[0].textContent="LIVE PRICE · "+(Number.isFinite(live)?fmt(live):"—")+" ";
+  if(span){
+   span.textContent=pct==null?"":(pct>0?"+":"")+pct.toFixed(2)+"% FROM ENTRY";
+   span.className=pct==null?"":pct>=0?"positive":"negative";
+  }
+ });
+}
 async function loadTradeHistory(){
  const refreshBtn=$("historyRefresh");
  if(refreshBtn){refreshBtn.disabled=true;refreshBtn.textContent="Loading…"}
@@ -339,8 +351,12 @@ async function loadTradeHistory(){
   const grouped=new Map();
   rows.forEach(x=>{const k=x.trade_key||x.event_key;if(!grouped.has(k))grouped.set(k,[]);grouped.get(k).push(x)});
   const trades=[...grouped.entries()].sort((a,b)=>{
+   const terminal=events=>events.some(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
+   const activeA=!terminal(a[1]),activeB=!terminal(b[1]);
+   if(activeA!==activeB)return activeA?-1:1;
    const ta=Math.max(...a[1].map(e=>new Date(e.candle_time||e.occurred_at).getTime()));
-   const tb=Math.max(...b[1].map(e=>new Date(e.candle_time||e.occurred_at).getTime()));return tb-ta;
+   const tb=Math.max(...b[1].map(e=>new Date(e.candle_time||e.occurred_at).getTime()));
+   return tb-ta;
   });
   const quantities=getJournalQuantities();
   $("historyRows").innerHTML=trades.length?trades.map(([key,events])=>{
@@ -376,7 +392,10 @@ async function loadTradeHistory(){
    const entryTimeText=formatJournalTime(entryAt,true);
    const initSL=entryEvent.stop_loss,initTarget=entryEvent.target_price;
    const quantityBlock='<div class="journal-pnl"><div class="journal-qty"><label>QUANTITY</label><input class="journal-qty-input" type="number" min="0" step="any" inputmode="decimal" data-trade-key="'+encodeURIComponent(key)+'" value="'+String(qtyRaw)+'" aria-label="Quantity for '+entryEvent.symbol+' '+entryEvent.side+' trade"></div><div class="journal-result"><small>POINTS · ENTRY TO EXIT</small><b class="'+(points==null?"":points>=0?"positive":"negative")+'">'+(points==null?"Pending SL exit":fmtSigned(points)+" pts")+'</b></div><div class="journal-result"><small>PROFIT / LOSS</small><b class="'+resultClass+'">'+(pnl==null?"—":(pnl>0?"+":"")+fmt(pnl))+'</b></div><div class="journal-result"><small>RETURN %</small><b class="'+(pct==null?"":pct>=0?"positive":"negative")+'">'+(pct==null?"—":(pct>0?"+":"")+pct.toFixed(2)+"%")+'</b></div></div><div class="history-muted journal-calc-note">'+(isClosed?"Calculated from entry price and recorded SL-exit price.":"Trade is still active; final P&L will appear after SL exit.")+' · P&L = points × quantity; percentage is based on entry price, before fees/leverage/contract multiplier.</div>';
-   return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div></div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
+   const live=marketData[entryEvent.symbol]?.price;
+   const livePct=entry!=null&&entry>0&&Number.isFinite(live)?(live-entry)/entry*100:null;
+   const liveLine='<div class="journal-live-price" data-live-symbol="'+entryEvent.symbol+'" data-entry="'+(entry??"")+'">LIVE PRICE · '+(Number.isFinite(live)?fmt(live):"—")+' <span class="'+(livePct==null?"":livePct>=0?"positive":"negative")+'">'+(livePct==null?"":(livePct>0?"+":"")+livePct.toFixed(2)+"% FROM ENTRY")+'</span></div>';
+   return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div>'+liveLine+'</div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
   }).join(""):'<div class="history-muted">No trades match these filters.</div>';
  }catch(e){$("historyConnection").textContent="Database unavailable · "+e.message;$("historyRows").innerHTML='<div class="history-muted">Could not load history. '+e.message+'</div>';console.error(e)}
  finally{if(refreshBtn){refreshBtn.disabled=false;refreshBtn.textContent="↻ Refresh"}}
@@ -449,7 +468,7 @@ function renderMarkets(){
  $("marketStrip").innerHTML=markets.map(m=>{
   const d=marketData[m.symbol]||{},price=fmt(d.price),change=Number(d.change);
   const ch=Number.isFinite(change)?(change>0?"+":"")+change.toFixed(2)+"%":"Live";
-  return '<article class="market-card '+(selected===m.symbol?"active":"")+'" data-symbol="'+m.symbol+'"><div class="coin-head"><div class="coin-id"><span class="coin-icon">'+m.icon+'</span><span>'+m.name+' <span class="coin-symbol">'+m.ticker+'</span></span></div></div><div class="coin-price">'+price+'</div><div class="coin-change '+(change>=0?"positive":"negative")+'">'+ch+'</div><div class="mini-note">DELTA · LIVE PRICE</div></article>';
+  return '<article class="market-card '+(selected===m.symbol?"active":"")+'" data-symbol="'+m.symbol+'"><div class="coin-head"><div class="coin-id"><span class="coin-icon">'+m.icon+'</span><span>'+m.name+' <span class="coin-symbol">'+m.ticker+'</span></span></div></div><div class="coin-price">'+price+'</div><div class="coin-change '+(change>=0?"positive":"negative")+'">'+ch+'</div></article>';
  }).join("");
  document.querySelectorAll(".market-card[data-symbol]").forEach(el=>el.addEventListener("click",()=>selectMarket(el.dataset.symbol)));
 }
@@ -462,6 +481,7 @@ async function refreshTickers(){
   fallback.forEach(x=>{if(x.status==="fulfilled")snapshot[x.value[0]]=x.value[1]});
   marketData={...marketData,...snapshot};
   renderMarkets();
+  updateJournalLivePrices();
   const liveCount=markets.filter(m=>Number.isFinite(marketData[m.symbol]?.price)).length;
   const d=marketData[selected];if(d){$("chartPrice").textContent=fmt(d.price)}
   setConnection(liveCount?("Live · "+liveCount+"/"+markets.length+" markets · refreshed "+new Date().toLocaleTimeString()):"Price feed unavailable · tap refresh",!liveCount);
