@@ -336,13 +336,14 @@ async function loadTradeHistory(){
   const allRows=[];let offset=0,batchSize=1000;
   while(true){
    let url=SUPABASE_URL+"/rest/v1/trade_history_events?select=*&order=candle_time.desc,id.desc&limit="+batchSize+"&offset="+offset;
-   if(coinFilter!=="ALL")url+="&symbol=eq."+encodeURIComponent(coinFilter);
-   if(tfFilter!=="ALL")url+="&timeframe=eq."+encodeURIComponent(tfFilter);
    const r=await fetch(url,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Prefer:"count=none"}});
    if(!r.ok)throw Error("History load "+r.status+" "+(await r.text()).slice(0,160));
    const batch=await r.json();allRows.push(...batch);if(batch.length<batchSize)break;offset+=batchSize;
   }
-  const rows=allRows;
+  const rows=allRows.filter(x=>
+   (coinFilter==="ALL"||String(x.symbol||"").trim().toUpperCase()===coinFilter.trim().toUpperCase())&&
+   (tfFilter==="ALL"||String(x.timeframe||"").trim().toLowerCase()===tfFilter.trim().toLowerCase())
+  );
   $("historyConnection").textContent="Connected · trade history ready";
   $("historyTotal").textContent=rows.length;
   $("historyEntries").textContent=rows.filter(x=>x.event_type==="ENTRY").length;
