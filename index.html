@@ -10,96 +10,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js">
-/* Institutional Market Intelligence: isolated read-only fetches; no strategy/Supabase writes. */
-(()=>{
- const $mi=id=>document.getElementById(id);
- const miState={asset:"BTC",busy:false};
- const miFmt=n=>{const v=Number(n);if(!Number.isFinite(v))return "—";return Math.abs(v)>=1e9?(v/1e9).toFixed(2)+"B":Math.abs(v)>=1e6?(v/1e6).toFixed(2)+"M":Math.abs(v)>=1e3?(v/1e3).toFixed(2)+"K":v.toLocaleString("en-US",{maximumFractionDigits:2})};
- const miDate=v=>v?new Date(v).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—";
- const miText=v=>String(v??"").replace(/<[^>]*>/g," ").replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&#39;/g,"'").replace(/&quot;/g,'"').trim();
- async function miJson(url){const r=await fetch(url,{headers:{Accept:"application/json"}});if(!r.ok)throw Error("HTTP "+r.status);return r.json()}
- async function miDerivatives(){
-  const asset=miState.asset,symbol=asset==="GOLD"?"XAUTUSDT":asset+"USDT";
-  $("miDerivTag").textContent=asset+" · "+(asset==="GOLD"?"TOKENIZED GOLD":"USDT PERP");
-  $("miOI").textContent="—";$("miFunding").textContent="—";$("miRatio").textContent="—";
-  if(asset==="GOLD"){$("miDerivStatus").textContent="Bybit XAUT perpetual availability is checked live; CFTC COMEX Gold positioning is shown separately."; }
-  try{
-   const category="linear";
-   const [oi,fr,ratio]=await Promise.all([
-    miJson("https://api.bybit.com/v5/market/open-interest?category="+category+"&symbol="+symbol+"&intervalTime=1h&limit=1"),
-    miJson("https://api.bybit.com/v5/market/funding/history?category="+category+"&symbol="+symbol+"&limit=1"),
-    miJson("https://api.bybit.com/v5/market/account-ratio?category="+category+"&symbol="+symbol+"&period=1h&limit=1")
-   ]);
-   const o=oi.result?.list?.[0],f=fr.result?.list?.[0],a=ratio.result?.list?.[0];
-   if(oi.retCode!==0||fr.retCode!==0||ratio.retCode!==0)throw Error(oi.retMsg||fr.retMsg||ratio.retMsg||"Instrument unavailable");
-   $("miOI").textContent=o?miFmt(o.openInterest):"—";
-   $("miFunding").textContent=f?(Number(f.fundingRate)*100).toFixed(4)+"%":"—";
-   $("miRatio").textContent=a?Number(a.buyRatio).toFixed(2)+" / "+Number(a.sellRatio).toFixed(2):"—";
-   $("miDerivStatus").textContent="Bybit linear perpetual · latest public snapshot"+(o?" · "+new Date(Number(o.timestamp)).toLocaleString():"");
-  }catch(e){$("miDerivStatus").textContent="No live derivatives snapshot for "+symbol+": "+e.message+". Instrument may not be listed on this venue."}
- }
- async function miCOT(){
-  const asset=miState.asset,isGold=asset==="GOLD";
-  const dataset=isGold?"72hh-3qpy":"gpe5-46if";
-  const keyword=asset==="GOLD"?"GOLD":asset==="BTC"?"BITCOIN":"ETHER";
-  const longField=isGold?"m_money_positions_long_all":"lev_money_positions_long";
-  const shortField=isGold?"m_money_positions_short_all":"lev_money_positions_short";
-  const groupLabel=isGold?"Managed Money":"Leveraged Money";
-  $("miCotDate").textContent="—";$("miCotNet").textContent="—";$("miCotOI").textContent="—";
-  const params=new URLSearchParams({
-   "$select":"report_date_as_yyyy_mm_dd,contract_market_name,open_interest_all,"+longField+","+shortField,
-   "$where":"contract_market_name like '%"+keyword+"%'",
-   "$order":"report_date_as_yyyy_mm_dd DESC",
-   "$limit":"1"
-  });
-  const url="https://publicreporting.cftc.gov/resource/"+dataset+".json?"+params.toString();
-  try{
-   const rows=await miJson(url),r=rows[0];
-   if(!r)throw Error("No matching CFTC futures contract found");
-   const net=Number(r[longField])-Number(r[shortField]);
-   if(!Number.isFinite(net))throw Error("Position fields unavailable in report");
-   $("miCotDate").textContent=miDate(r.report_date_as_yyyy_mm_dd);
-   $("miCotNet").textContent=(net>0?"+":"")+miFmt(net);
-   $("miCotNet").className=net>=0?"mi-positive":"mi-negative";
-   $("miCotOI").textContent=miFmt(r.open_interest_all);
-   $("miCotStatus").textContent=r.contract_market_name+" · "+groupLabel+" net = long minus short · CFTC weekly report.";
-  }catch(e){$("miCotStatus").textContent="CFTC data unavailable for "+asset+": "+e.message+". Open the official report link to inspect available contracts."}
- }
- async function miNews(){
-  const host=$("miNews");host.innerHTML='<div class="mi-muted">Loading official news feeds…</div>';
-  const feeds=[
-   {name:"Federal Reserve",url:"https://www.federalreserve.gov/feeds/press_all.xml"},
-   {name:"Federal Reserve · Speeches",url:"https://www.federalreserve.gov/feeds/speeches_and_testimony.xml"},
-   {name:"ECB · Press releases",url:"https://www.ecb.europa.eu/rss/press.html"}
-  ];
-  const results=await Promise.allSettled(feeds.map(async feed=>{
-   const r=await fetch(feed.url,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);
-   const xml=new DOMParser().parseFromString(await r.text(),"text/xml");
-   if(xml.querySelector("parsererror"))throw Error("Invalid feed");
-   return [...xml.querySelectorAll("item")].slice(0,8).map(n=>({source:feed.name,title:miText(n.querySelector("title")?.textContent),link:n.querySelector("link")?.textContent?.trim(),date:n.querySelector("pubDate")?.textContent,desc:miText(n.querySelector("description")?.textContent).slice(0,190)}));
-  }));
-  const items=results.flatMap(x=>x.status==="fulfilled"?x.value:[]);
-  items.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
-  if(!items.length){host.innerHTML='<div class="mi-muted">Official RSS feeds could not be loaded directly by this browser (network/CORS). Use the source links above; no sample headlines are shown as live news.</div>';return}
-  host.innerHTML=items.slice(0,12).map(n=>'<a class="mi-news" href="'+(n.link||"#")+'" target="_blank" rel="noopener"><div class="mi-news-meta"><span>'+n.source+'</span><span>·</span><span>'+ (n.date?miDate(n.date):"Official update")+'</span></div><div class="mi-news-title">'+n.title+'</div>'+(n.desc?'<div class="mi-news-desc">'+n.desc+'</div>':"")+'</a>').join("");
- }
- async function miRefresh(){
-  if(miState.busy)return;miState.busy=true;
-  $("miRefresh").disabled=true;$("miRefresh").textContent="Refreshing…";
-  await Promise.allSettled([miDerivatives(),miCOT(),miNews()]);
-  $("miUpdated").textContent="Last checked "+new Date().toLocaleString()+" · Public sources · read-only";
-  miState.busy=false;$("miRefresh").disabled=false;$("miRefresh").textContent="↻ Refresh intelligence";
- }
- document.querySelectorAll("[data-mi-asset]").forEach(b=>b.addEventListener("click",()=>{
-  miState.asset=b.dataset.miAsset;
-  document.querySelectorAll("[data-mi-asset]").forEach(x=>x.classList.toggle("active",x===b));
-  miDerivatives();miCOT();
- }));
- $("miRefresh")?.addEventListener("click",miRefresh);
- miRefresh();
- setInterval(()=>{miDerivatives();miCOT()},300000);
-})();
-
 </script>
 <style>
 :root{--bg:#070b13;--panel:#0d1421;--panel2:#111b2b;--line:#1c2a3d;--text:#edf3fc;--muted:#8292a9;--gold:#e7bd70;--gold2:#b98a3f;--green:#31d6a0;--red:#ff647c;--blue:#6fa9ff;--mono:"DM Mono",monospace;--font:"Manrope",sans-serif}
@@ -1230,6 +1140,95 @@ async function start(){
  setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
 }
 start();
+/* Institutional Market Intelligence: isolated read-only fetches; no strategy/Supabase writes. */
+(()=>{
+ const $mi=id=>document.getElementById(id);
+ const miState={asset:"BTC",busy:false};
+ const miFmt=n=>{const v=Number(n);if(!Number.isFinite(v))return "—";return Math.abs(v)>=1e9?(v/1e9).toFixed(2)+"B":Math.abs(v)>=1e6?(v/1e6).toFixed(2)+"M":Math.abs(v)>=1e3?(v/1e3).toFixed(2)+"K":v.toLocaleString("en-US",{maximumFractionDigits:2})};
+ const miDate=v=>v?new Date(v).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—";
+ const miText=v=>String(v??"").replace(/<[^>]*>/g," ").replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&#39;/g,"'").replace(/&quot;/g,'"').trim();
+ async function miJson(url){const r=await fetch(url,{headers:{Accept:"application/json"}});if(!r.ok)throw Error("HTTP "+r.status);return r.json()}
+ async function miDerivatives(){
+  const asset=miState.asset,symbol=asset==="GOLD"?"XAUTUSDT":asset+"USDT";
+  $("miDerivTag").textContent=asset+" · "+(asset==="GOLD"?"TOKENIZED GOLD":"USDT PERP");
+  $("miOI").textContent="—";$("miFunding").textContent="—";$("miRatio").textContent="—";
+  if(asset==="GOLD"){$("miDerivStatus").textContent="Bybit XAUT perpetual availability is checked live; CFTC COMEX Gold positioning is shown separately."; }
+  try{
+   const category="linear";
+   const [oi,fr,ratio]=await Promise.all([
+    miJson("https://api.bybit.com/v5/market/open-interest?category="+category+"&symbol="+symbol+"&intervalTime=1h&limit=1"),
+    miJson("https://api.bybit.com/v5/market/funding/history?category="+category+"&symbol="+symbol+"&limit=1"),
+    miJson("https://api.bybit.com/v5/market/account-ratio?category="+category+"&symbol="+symbol+"&period=1h&limit=1")
+   ]);
+   const o=oi.result?.list?.[0],f=fr.result?.list?.[0],a=ratio.result?.list?.[0];
+   if(oi.retCode!==0||fr.retCode!==0||ratio.retCode!==0)throw Error(oi.retMsg||fr.retMsg||ratio.retMsg||"Instrument unavailable");
+   $("miOI").textContent=o?miFmt(o.openInterest):"—";
+   $("miFunding").textContent=f?(Number(f.fundingRate)*100).toFixed(4)+"%":"—";
+   $("miRatio").textContent=a?Number(a.buyRatio).toFixed(2)+" / "+Number(a.sellRatio).toFixed(2):"—";
+   $("miDerivStatus").textContent="Bybit linear perpetual · latest public snapshot"+(o?" · "+new Date(Number(o.timestamp)).toLocaleString():"");
+  }catch(e){$("miDerivStatus").textContent="No live derivatives snapshot for "+symbol+": "+e.message+". Instrument may not be listed on this venue."}
+ }
+ async function miCOT(){
+  const asset=miState.asset,isGold=asset==="GOLD";
+  const dataset=isGold?"72hh-3qpy":"gpe5-46if";
+  const keyword=asset==="GOLD"?"GOLD":asset==="BTC"?"BITCOIN":"ETHER";
+  const longField=isGold?"m_money_positions_long_all":"lev_money_positions_long";
+  const shortField=isGold?"m_money_positions_short_all":"lev_money_positions_short";
+  const groupLabel=isGold?"Managed Money":"Leveraged Money";
+  $("miCotDate").textContent="—";$("miCotNet").textContent="—";$("miCotOI").textContent="—";
+  const params=new URLSearchParams({
+   "$select":"report_date_as_yyyy_mm_dd,contract_market_name,open_interest_all,"+longField+","+shortField,
+   "$where":"contract_market_name like '%"+keyword+"%'",
+   "$order":"report_date_as_yyyy_mm_dd DESC",
+   "$limit":"1"
+  });
+  const url="https://publicreporting.cftc.gov/resource/"+dataset+".json?"+params.toString();
+  try{
+   const rows=await miJson(url),r=rows[0];
+   if(!r)throw Error("No matching CFTC futures contract found");
+   const net=Number(r[longField])-Number(r[shortField]);
+   if(!Number.isFinite(net))throw Error("Position fields unavailable in report");
+   $("miCotDate").textContent=miDate(r.report_date_as_yyyy_mm_dd);
+   $("miCotNet").textContent=(net>0?"+":"")+miFmt(net);
+   $("miCotNet").className=net>=0?"mi-positive":"mi-negative";
+   $("miCotOI").textContent=miFmt(r.open_interest_all);
+   $("miCotStatus").textContent=r.contract_market_name+" · "+groupLabel+" net = long minus short · CFTC weekly report.";
+  }catch(e){$("miCotStatus").textContent="CFTC data unavailable for "+asset+": "+e.message+". Open the official report link to inspect available contracts."}
+ }
+ async function miNews(){
+  const host=$("miNews");host.innerHTML='<div class="mi-muted">Loading official news feeds…</div>';
+  const feeds=[
+   {name:"Federal Reserve",url:"https://www.federalreserve.gov/feeds/press_all.xml"},
+   {name:"Federal Reserve · Speeches",url:"https://www.federalreserve.gov/feeds/speeches_and_testimony.xml"},
+   {name:"ECB · Press releases",url:"https://www.ecb.europa.eu/rss/press.html"}
+  ];
+  const results=await Promise.allSettled(feeds.map(async feed=>{
+   const r=await fetch(feed.url,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);
+   const xml=new DOMParser().parseFromString(await r.text(),"text/xml");
+   if(xml.querySelector("parsererror"))throw Error("Invalid feed");
+   return [...xml.querySelectorAll("item")].slice(0,8).map(n=>({source:feed.name,title:miText(n.querySelector("title")?.textContent),link:n.querySelector("link")?.textContent?.trim(),date:n.querySelector("pubDate")?.textContent,desc:miText(n.querySelector("description")?.textContent).slice(0,190)}));
+  }));
+  const items=results.flatMap(x=>x.status==="fulfilled"?x.value:[]);
+  items.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+  if(!items.length){host.innerHTML='<div class="mi-muted">Official RSS feeds could not be loaded directly by this browser (network/CORS). Use the source links above; no sample headlines are shown as live news.</div>';return}
+  host.innerHTML=items.slice(0,12).map(n=>'<a class="mi-news" href="'+(n.link||"#")+'" target="_blank" rel="noopener"><div class="mi-news-meta"><span>'+n.source+'</span><span>·</span><span>'+ (n.date?miDate(n.date):"Official update")+'</span></div><div class="mi-news-title">'+n.title+'</div>'+(n.desc?'<div class="mi-news-desc">'+n.desc+'</div>':"")+'</a>').join("");
+ }
+ async function miRefresh(){
+  if(miState.busy)return;miState.busy=true;
+  $("miRefresh").disabled=true;$("miRefresh").textContent="Refreshing…";
+  await Promise.allSettled([miDerivatives(),miCOT(),miNews()]);
+  $("miUpdated").textContent="Last checked "+new Date().toLocaleString()+" · Public sources · read-only";
+  miState.busy=false;$("miRefresh").disabled=false;$("miRefresh").textContent="↻ Refresh intelligence";
+ }
+ document.querySelectorAll("[data-mi-asset]").forEach(b=>b.addEventListener("click",()=>{
+  miState.asset=b.dataset.miAsset;
+  document.querySelectorAll("[data-mi-asset]").forEach(x=>x.classList.toggle("active",x===b));
+  miDerivatives();miCOT();
+ }));
+ $("miRefresh")?.addEventListener("click",miRefresh);
+ miRefresh();
+ setInterval(()=>{miDerivatives();miCOT()},300000);
+})();
 </script>
 </body>
 </html>
