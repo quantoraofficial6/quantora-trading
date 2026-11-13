@@ -894,7 +894,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
    if(pos.side==="BUY"){
     if(cur.close<pos.sl){
      pushEvent("BUY","STOP LOSS HIT · BUY TRAILING SL",cur.close,cur.time,"Trailing stop hit on candle close; reversed to SELL");
-     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),stop=pos.rangeHigh,risk=stop-cur.close;
+     const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),stop=pos.first?.high??pos.second.high,risk=stop-cur.close;
      pos=risk>0?{side:"SELL",entry:cur.close,sl:stop,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,first:pos.first??pos.second,second:cur,entryTime:cur.time,targetHit:false}:null;
      if(pos)pushEvent("SELL","SELL ENTRY · SL REVERSAL",cur.close,cur.time,"New SELL position opened immediately after BUY trailing stop hit.");
      lastEvent="SELL";
@@ -909,7 +909,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
      const nextSL=Math.max(pos.sl,lo),risk=cur.close-nextSL;
      const recalculateTarget=pos.targetHit;
-     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
+     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.first=pos.second;pos.second=cur;
      if(recalculateTarget&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;pos.targetHitTime=null;}
      pushEvent("BUY",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,"");
     }
@@ -917,7 +917,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
     if(cur.close>pos.sl){
      pushEvent("SELL","STOP LOSS HIT · SELL TRAILING SL",cur.close,cur.time,"Trailing stop hit on candle close; reversed to BUY");
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),stop=pos.first?.low??pos.second.low,risk=cur.close-stop;
-     pos=risk>0?{side:"BUY",entry:cur.close,sl:stop,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,first:pos.first??pos.second,second:cur,entryTime:cur.time,targetHit:false}:null;
+     pos=risk>0?{side:"BUY",entry:cur.close,sl:stop,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,first:pos.second,second:cur,entryTime:cur.time,targetHit:false}:null;
      if(pos)pushEvent("BUY","BUY ENTRY · SL REVERSAL",cur.close,cur.time,"New BUY position opened immediately after SELL trailing stop hit.");
      lastEvent="BUY";
      continue;
