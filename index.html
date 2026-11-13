@@ -1081,9 +1081,7 @@ function qRenderEquity(){
  setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
 }
 start();
-</script>
-</body>
-</html>+qFmt(cap)+' · End 
++qFmt(cap)+' · End 
  tickClock();setInterval(tickClock,1000);initChart();loadTradeHistory();setInterval(loadTradeHistory,300000);
  await Promise.allSettled([refreshTickers(),refreshChart()]);
  setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
