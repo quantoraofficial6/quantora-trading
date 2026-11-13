@@ -9,7 +9,87 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js">
+/* Institutional Market Intelligence: isolated read-only fetches; no strategy/Supabase writes. */
+(()=>{
+ const $mi=id=>document.getElementById(id);
+ const miState={asset:"BTC",busy:false};
+ const miFmt=n=>{const v=Number(n);if(!Number.isFinite(v))return "—";return Math.abs(v)>=1e9?(v/1e9).toFixed(2)+"B":Math.abs(v)>=1e6?(v/1e6).toFixed(2)+"M":Math.abs(v)>=1e3?(v/1e3).toFixed(2)+"K":v.toLocaleString("en-US",{maximumFractionDigits:2})};
+ const miDate=v=>v?new Date(v).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—";
+ const miText=v=>String(v??"").replace(/<[^>]*>/g," ").replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&#39;/g,"'").replace(/&quot;/g,'"').trim();
+ async function miJson(url){const r=await fetch(url,{headers:{Accept:"application/json"}});if(!r.ok)throw Error("HTTP "+r.status);return r.json()}
+ async function miDerivatives(){
+  const asset=miState.asset,symbol=asset==="GOLD"?"XAUTUSDT":asset+"USDT";
+  $("miDerivTag").textContent=asset+" · "+(asset==="GOLD"?"TOKENIZED GOLD":"USDT PERP");
+  $("miOI").textContent="—";$("miFunding").textContent="—";$("miRatio").textContent="—";
+  if(asset==="GOLD"){$("miDerivStatus").textContent="Bybit XAUT perpetual availability is checked live; CFTC COMEX Gold positioning is shown separately."; }
+  try{
+   const category="linear";
+   const [oi,fr,ratio]=await Promise.all([
+    miJson("https://api.bybit.com/v5/market/open-interest?category="+category+"&symbol="+symbol+"&intervalTime=1h&limit=1"),
+    miJson("https://api.bybit.com/v5/market/funding/history?category="+category+"&symbol="+symbol+"&limit=1"),
+    miJson("https://api.bybit.com/v5/market/account-ratio?category="+category+"&symbol="+symbol+"&period=1h&limit=1")
+   ]);
+   const o=oi.result?.list?.[0],f=fr.result?.list?.[0],a=ratio.result?.list?.[0];
+   if(oi.retCode!==0||fr.retCode!==0||ratio.retCode!==0)throw Error(oi.retMsg||fr.retMsg||ratio.retMsg||"Instrument unavailable");
+   $("miOI").textContent=o?miFmt(o.openInterest):"—";
+   $("miFunding").textContent=f?(Number(f.fundingRate)*100).toFixed(4)+"%":"—";
+   $("miRatio").textContent=a?Number(a.buyRatio).toFixed(2)+" / "+Number(a.sellRatio).toFixed(2):"—";
+   $("miDerivStatus").textContent="Bybit linear perpetual · latest public snapshot"+(o?" · "+new Date(Number(o.timestamp)).toLocaleString():"");
+  }catch(e){$("miDerivStatus").textContent="No live derivatives snapshot for "+symbol+": "+e.message+". Instrument may not be listed on this venue."}
+ }
+ async function miCOT(){
+  const asset=miState.asset,ds="https://publicreporting.cftc.gov/resource/72hh-3qpy.json";
+  $("miCotDate").textContent="—";$("miCotNet").textContent="—";$("miCotOI").textContent="—";
+  const keyword=asset==="GOLD"?"GOLD":asset==="BTC"?"BITCOIN":"ETHER";
+  const url=ds+"?"+new URLSearchParams({$select:"report_date_as_yyyy_mm_dd,contract_market_name,open_interest_all,m_money_positions_long_all,m_money_positions_short_all", $where:"upper(contract_market_name) like '%"+keyword+"%'",$order:"report_date_as_yyyy_mm_dd DESC",$limit:"1"});
+  try{
+   const rows=await miJson(url),r=rows[0];
+   if(!r)throw Error("No matching CFTC futures contract found");
+   const net=Number(r.m_money_positions_long_all)-Number(r.m_money_positions_short_all);
+   $("miCotDate").textContent=miDate(r.report_date_as_yyyy_mm_dd);
+   $("miCotNet").textContent=(net>0?"+":"")+miFmt(net);
+   $("miCotNet").className=net>=0?"mi-positive":"mi-negative";
+   $("miCotOI").textContent=miFmt(r.open_interest_all);
+   $("miCotStatus").textContent=r.contract_market_name+" · Managed Money net = long minus short · weekly CFTC report.";
+  }catch(e){$("miCotStatus").textContent="CFTC data unavailable for "+asset+": "+e.message+". Open the official report link to inspect available contracts."}
+ }
+ async function miNews(){
+  const host=$("miNews");host.innerHTML='<div class="mi-muted">Loading official news feeds…</div>';
+  const feeds=[
+   {name:"Federal Reserve",url:"https://www.federalreserve.gov/feeds/press_all.xml"},
+   {name:"Federal Reserve · Speeches",url:"https://www.federalreserve.gov/feeds/speeches_and_testimony.xml"},
+   {name:"ECB · Press releases",url:"https://www.ecb.europa.eu/rss/press.html"}
+  ];
+  const results=await Promise.allSettled(feeds.map(async feed=>{
+   const r=await fetch(feed.url,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);
+   const xml=new DOMParser().parseFromString(await r.text(),"text/xml");
+   if(xml.querySelector("parsererror"))throw Error("Invalid feed");
+   return [...xml.querySelectorAll("item")].slice(0,8).map(n=>({source:feed.name,title:miText(n.querySelector("title")?.textContent),link:n.querySelector("link")?.textContent?.trim(),date:n.querySelector("pubDate")?.textContent,desc:miText(n.querySelector("description")?.textContent).slice(0,190)}));
+  }));
+  const items=results.flatMap(x=>x.status==="fulfilled"?x.value:[]);
+  items.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
+  if(!items.length){host.innerHTML='<div class="mi-muted">Official RSS feeds could not be loaded directly by this browser (network/CORS). Use the source links above; no sample headlines are shown as live news.</div>';return}
+  host.innerHTML=items.slice(0,12).map(n=>'<a class="mi-news" href="'+(n.link||"#")+'" target="_blank" rel="noopener"><div class="mi-news-meta"><span>'+n.source+'</span><span>·</span><span>'+ (n.date?miDate(n.date):"Official update")+'</span></div><div class="mi-news-title">'+n.title+'</div>'+(n.desc?'<div class="mi-news-desc">'+n.desc+'</div>':"")+'</a>').join("");
+ }
+ async function miRefresh(){
+  if(miState.busy)return;miState.busy=true;
+  $("miRefresh").disabled=true;$("miRefresh").textContent="Refreshing…";
+  await Promise.allSettled([miDerivatives(),miCOT(),miNews()]);
+  $("miUpdated").textContent="Last checked "+new Date().toLocaleString()+" · Public sources · read-only";
+  miState.busy=false;$("miRefresh").disabled=false;$("miRefresh").textContent="↻ Refresh intelligence";
+ }
+ document.querySelectorAll("[data-mi-asset]").forEach(b=>b.addEventListener("click",()=>{
+  miState.asset=b.dataset.miAsset;
+  document.querySelectorAll("[data-mi-asset]").forEach(x=>x.classList.toggle("active",x===b));
+  miDerivatives();miCOT();
+ }));
+ $("miRefresh")?.addEventListener("click",miRefresh);
+ miRefresh();
+ setInterval(()=>{miDerivatives();miCOT()},300000);
+})();
+
+</script>
 <style>
 :root{--bg:#070b13;--panel:#0d1421;--panel2:#111b2b;--line:#1c2a3d;--text:#edf3fc;--muted:#8292a9;--gold:#e7bd70;--gold2:#b98a3f;--green:#31d6a0;--red:#ff647c;--blue:#6fa9ff;--mono:"DM Mono",monospace;--font:"Manrope",sans-serif}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#17263d 0,#070b13 55%);color:var(--text);font-family:var(--font);min-height:100vh}
@@ -271,6 +351,49 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
  .history-event-card{padding:11px}
 }
 
+
+/* INSTITUTIONAL MARKET INTELLIGENCE · isolated dashboard styles */
+.mi-wrap{margin:28px 0 8px;display:grid;gap:16px}
+.mi-hero{border:1px solid rgba(231,189,112,.24);border-radius:18px;padding:20px;background:radial-gradient(ellipse at 90% 0%,rgba(66,105,147,.2),transparent 45%),linear-gradient(135deg,#101f32,#091522);box-shadow:0 16px 36px #0003}
+.mi-kicker{font-size:9px;letter-spacing:2px;color:var(--gold);font-weight:800}
+.mi-title{font-size:clamp(20px,2.5vw,28px);margin:7px 0 5px;letter-spacing:-.7px}
+.mi-sub{font-size:11px;color:var(--muted);line-height:1.6}
+.mi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.mi-card{min-width:0;border:1px solid rgba(125,158,194,.19);border-radius:16px;background:linear-gradient(145deg,#0e1c2d,#091522);padding:16px;box-shadow:0 12px 28px #0002}
+.mi-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
+.mi-card h3{margin:0;font-size:12px;letter-spacing:.8px}
+.mi-tag{font-size:9px;color:#9fb1c8;border:1px solid #30445c;border-radius:20px;padding:5px 8px;white-space:nowrap}
+.mi-muted{color:var(--muted);font-size:10px;line-height:1.6}
+.mi-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mi-stat{padding:10px;border-radius:11px;background:#0a1929;border:1px solid #20334a;min-width:0}
+.mi-stat small{display:block;color:#8da0b7;font-size:9px;letter-spacing:.5px}
+.mi-stat b{display:block;margin-top:6px;font:700 15px var(--mono);color:#f0cb83;overflow-wrap:anywhere}
+.mi-asset-tabs{display:flex;gap:7px;flex-wrap:wrap}
+.mi-tab,.mi-refresh{border:1px solid #344b64;background:#12243a;color:#d8e4f2;padding:7px 12px;border-radius:9px;font-size:10px;font-weight:800}
+.mi-tab.active{border-color:var(--gold);color:var(--gold);background:#2a251b}
+.mi-refresh{color:var(--gold);border-color:#80683f}
+.mi-chart{width:100%;height:145px;display:block}
+.mi-chart-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:9px;color:var(--muted)}
+.mi-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.mi-news-list{display:grid;gap:0}
+.mi-news{display:block;padding:12px 0;border-top:1px solid #203047;text-decoration:none;color:var(--text)}
+.mi-news:first-child{border-top:0;padding-top:0}
+.mi-news:hover .mi-news-title{color:var(--gold)}
+.mi-news-meta{display:flex;gap:8px;flex-wrap:wrap;color:#8ea2bb;font-size:9px;margin-bottom:5px}
+.mi-news-title{font-size:11px;font-weight:800;line-height:1.5}
+.mi-news-desc{font-size:10px;color:var(--muted);line-height:1.5;margin-top:4px}
+.mi-table-wrap{overflow:auto}
+.mi-table{width:100%;border-collapse:collapse;min-width:460px;font-size:10px}
+.mi-table th,.mi-table td{padding:9px 8px;border-bottom:1px solid #203047;text-align:right;white-space:nowrap}
+.mi-table th:first-child,.mi-table td:first-child{text-align:left}
+.mi-table th{color:#8ea2bb;font-size:9px;letter-spacing:.5px}
+.mi-positive{color:var(--green)}.mi-negative{color:var(--red)}
+.mi-source-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.mi-source{font-size:9px;color:#d5b779;text-decoration:none;border:1px solid #4a402e;border-radius:8px;padding:6px 8px}
+.mi-note{font-size:9px;color:#8292a9;line-height:1.6}
+.mi-wide{grid-column:1/-1}
+@media(max-width:680px){.mi-grid{grid-template-columns:1fr}.mi-hero{padding:16px}.mi-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mi-card{padding:13px}.mi-wide{grid-column:auto}}
+
 </style>
 </head>
 <body>
@@ -337,6 +460,66 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
    </aside>
   </div>
   <div class="liq-footnote">Switch between UTC day (05:30 IST) and India day (00:00 IST) to compare previous-day levels and signals. Signals use closed 15-minute candles. This tool does not place orders.</div>
+ </div>
+</section>
+
+<section class="mi-wrap" id="institutionalIntelligence">
+ <div class="mi-hero">
+  <div class="mi-kicker">QUANTORA · INSTITUTIONAL INTELLIGENCE</div>
+  <h2 class="mi-title">Follow the flows behind the market.</h2>
+  <div class="mi-sub">BTC · ETH · GOLD — official macro releases, reported futures positioning and live derivatives context.</div>
+  <div class="mi-asset-tabs" style="margin-top:14px">
+   <button class="mi-tab active" type="button" data-mi-asset="BTC">BTC</button>
+   <button class="mi-tab" type="button" data-mi-asset="ETH">ETH</button>
+   <button class="mi-tab" type="button" data-mi-asset="GOLD">GOLD</button>
+   <button class="mi-refresh" id="miRefresh" type="button">↻ Refresh intelligence</button>
+  </div>
+  <div class="mi-note" id="miUpdated" style="margin-top:10px">Connecting to public market sources…</div>
+ </div>
+ <div class="mi-grid">
+  <article class="mi-card">
+   <div class="mi-card-head"><div><h3>DERIVATIVES SNAPSHOT</h3><div class="mi-muted">Public exchange market data · not named institution holdings</div></div><span class="mi-tag" id="miDerivTag">BTC · USDT PERP</span></div>
+   <div class="mi-stat-grid">
+    <div class="mi-stat"><small>OPEN INTEREST</small><b id="miOI">—</b></div>
+    <div class="mi-stat"><small>FUNDING RATE</small><b id="miFunding">—</b></div>
+    <div class="mi-stat"><small>LONG / SHORT</small><b id="miRatio">—</b></div>
+   </div>
+   <div class="mi-muted" id="miDerivStatus" style="margin-top:10px">Waiting for exchange data…</div>
+  </article>
+  <article class="mi-card">
+   <div class="mi-card-head"><div><h3>INSTITUTIONAL POSITIONING</h3><div class="mi-muted">CFTC Commitments of Traders · reported futures positions</div></div><span class="mi-tag">WEEKLY / DELAYED</span></div>
+   <div class="mi-stat-grid">
+    <div class="mi-stat"><small>REPORT DATE</small><b id="miCotDate">—</b></div>
+    <div class="mi-stat"><small>MANAGED MONEY NET</small><b id="miCotNet">—</b></div>
+    <div class="mi-stat"><small>OPEN INTEREST</small><b id="miCotOI">—</b></div>
+   </div>
+   <div class="mi-muted" id="miCotStatus" style="margin-top:10px">Loading CFTC positioning…</div>
+   <div class="mi-source-row"><a class="mi-source" href="https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" target="_blank" rel="noopener">CFTC official reports ↗</a></div>
+  </article>
+  <article class="mi-card mi-wide">
+   <div class="mi-card-head"><div><h3>GLOBAL MACRO & CENTRAL BANK NEWS</h3><div class="mi-muted">Official releases and statements · headlines link to original sources</div></div><span class="mi-tag">LIVE FEED</span></div>
+   <div class="mi-news-list" id="miNews"><div class="mi-muted">Loading official news feeds…</div></div>
+   <div class="mi-source-row"><a class="mi-source" href="https://www.federalreserve.gov/feeds/feeds.htm" target="_blank" rel="noopener">Federal Reserve feeds ↗</a><a class="mi-source" href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank" rel="noopener">FOMC calendar ↗</a><a class="mi-source" href="https://www.ecb.europa.eu/press/html/index.en.html" target="_blank" rel="noopener">ECB press ↗</a></div>
+  </article>
+  <article class="mi-card">
+   <div class="mi-card-head"><div><h3>WHAT INSTITUTIONS REPORT</h3><div class="mi-muted">How to interpret positioning categories</div></div><span class="mi-tag">CFTC DATA GUIDE</span></div>
+   <div class="mi-news-list">
+    <div class="mi-news"><div class="mi-news-title">Managed Money</div><div class="mi-news-desc">Funds and money managers; useful for tracking speculative futures positioning.</div></div>
+    <div class="mi-news"><div class="mi-news-title">Producer / Merchant</div><div class="mi-news-desc">Commercial participants such as producers, merchants, processors and users.</div></div>
+    <div class="mi-news"><div class="mi-news-title">Swap Dealers</div><div class="mi-news-desc">Dealers using futures to hedge swap exposures; not a simple directional bet.</div></div>
+    <div class="mi-news"><div class="mi-news-title">Asset Managers / Leveraged Funds</div><div class="mi-news-desc">Financial futures categories reported in the CFTC Traders in Financial Futures report.</div></div>
+   </div>
+   <div class="mi-note">CFTC reports aggregate categories, not named banks or each fund's live positions. Reports are generally based on Tuesday positions and published Friday.</div>
+  </article>
+  <article class="mi-card">
+   <div class="mi-card-head"><div><h3>DATA QUALITY & DISCLOSURE</h3><div class="mi-muted">Know what each feed can and cannot tell you</div></div><span class="mi-tag">SOURCE NOTES</span></div>
+   <div class="mi-news-list">
+    <div class="mi-news"><div class="mi-news-title">BTC / ETH derivatives</div><div class="mi-news-desc">Bybit public futures endpoints. Open interest is aggregate contract exposure; long/short ratio is account ratio, not exact institutional positioning.</div></div>
+    <div class="mi-news"><div class="mi-news-title">GOLD futures positioning</div><div class="mi-news-desc">CFTC Disaggregated COT data for COMEX Gold, reported weekly.</div></div>
+    <div class="mi-news"><div class="mi-news-title">SEC 13F filings</div><div class="mi-news-desc">Quarterly disclosed U.S. equity holdings. Not a real-time source and generally not BTC/ETH spot ownership.</div></div>
+   </div>
+   <div class="mi-source-row"><a class="mi-source" href="https://www.sec.gov/data-research/sec-markets-data/form-13f-data-sets" target="_blank" rel="noopener">SEC 13F datasets ↗</a><a class="mi-source" href="https://publicreporting.cftc.gov/Commitments-of-Traders/Disaggregated-Combined/kh3c-gbw2/about_data" target="_blank" rel="noopener">CFTC Disaggregated data ↗</a></div>
+  </article>
  </div>
 </section>
 <footer class="footer"><span>QUANTORA TERMINAL · VERSION 1.0</span><span>For research and education only. Not financial advice.</span></footer>
