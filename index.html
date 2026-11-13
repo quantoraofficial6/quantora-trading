@@ -280,7 +280,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </div>
 
 <div class="journal-modal" id="tradeJournalModal" hidden><div class="journal-shell"><div class="journal-modal-head"><div><div class="history-trade-title">QUANTORA · TRADE JOURNAL</div><div class="history-muted">Complete signal and trade-event history</div></div><button type="button" id="tradeJournalClose" class="journal-close">✕ Close</button></div>
-<section class="trade-history-panel" id="tradeHistoryPanel"><div class="trade-history-head"><div><h2>TRADE HISTORY</h2><div class="history-muted" id="historyConnection">Connected · automatic trade saving</div></div><div class="history-actions"><button type="button" id="historyRefresh">↻ Refresh</button></div></div><div class="history-filters"><div class="history-filter"><label for="historySymbolFilter">COIN / MARKET</label><select id="historySymbolFilter"><option value="ALL">All coins</option><option value="BTCUSD">BTC · Bitcoin</option><option value="ETHUSD">ETH · Ethereum</option><option value="SOLUSD">SOL · Solana</option><option value="XRPUSD">XRP</option><option value="XAUTUSD">GOLD · Tether Gold</option></select></div><div class="history-filter"><label for="historyTimeframeFilter">TIMEFRAME</label><select id="historyTimeframeFilter"><option value="ALL">All timeframes</option><option value="1m">1 Minute</option><option value="5m">5 Minutes</option><option value="15m">15 Minutes</option><option value="1h">1 Hour</option><option value="2h">2 Hours</option><option value="4h">4 Hours</option><option value="1d">1 Day</option></select></div></div><div class="history-stats"><span>ALL EVENTS: <b id="historyTotal">—</b></span><span>ENTRIES: <b id="historyEntries">—</b></span><span>TARGETS: <b id="historyTargets">—</b></span><span>SL HITS: <b id="historyStops">—</b></span></div><div class="history-groups" id="historyRows"><div class="history-muted">Loading trade history…</div></div></section></div></div>
+<section class="trade-history-panel" id="tradeHistoryPanel"><div class="trade-history-head"><div><h2>TRADE HISTORY</h2><div class="history-muted" id="historyConnection">Connected · automatic trade saving</div></div><div class="history-actions"><button type="button" id="historyRefresh">↻ Refresh</button></div></div><div class="history-filters"><div class="history-filter"><label for="historySymbolFilter">COIN / MARKET</label><select id="historySymbolFilter"><option value="ALL">All coins</option><option value="BTCUSD">BTC · Bitcoin</option><option value="ETHUSD">ETH · Ethereum</option><option value="SOLUSD">SOL · Solana</option><option value="XRPUSD">XRP</option><option value="XAUTUSD">GOLD · Tether Gold</option></select></div><div class="history-filter"><label for="historyTimeframeFilter">TIMEFRAME</label><select id="historyTimeframeFilter"><option value="ALL">All timeframes</option><option value="1m">1 Minute</option><option value="5m">5 Minutes</option><option value="15m">15 Minutes</option><option value="1h">1 Hour</option><option value="2h">2 Hours</option><option value="4h">4 Hours</option><option value="1d">1 Day</option></select></div></div><div class="history-stats"><span>TRADES: <b id="historyTradeCount">—</b></span><span>RUNNING: <b id="historyRunning">—</b></span><span>WINNING: <b id="historyWinning">—</b></span><span>LOSING: <b id="historyLosing">—</b></span><span>PROFIT POINTS: <b id="historyProfitPoints">—</b></span><span>LOSS POINTS: <b id="historyLossPoints">—</b></span><span>NET POINTS: <b id="historyNetPoints">—</b></span></div><div class="history-groups" id="historyRows"><div class="history-muted">Loading trade history…</div></div></section></div></div>
 <script>
 const API="https://api.india.delta.exchange";
 const markets=[
@@ -314,6 +314,8 @@ function saveJournalQuantity(key,value){
  try{localStorage.setItem("quantora_journal_quantities",JSON.stringify(all))}catch(e){console.warn("Could not save journal quantity",e)}
 }
 function journalNum(v){const n=Number(v);return Number.isFinite(n)?n:null}
+function journalTradePoints(events,entryEvent){const close=[...events].reverse().find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");if(!close)return null;const entry=journalNum(entryEvent.entry_price??entryEvent.price),exit=journalNum(close.exit_price??close.price);if(entry==null||exit==null)return null;return entryEvent.side==="SELL"?entry-exit:exit-entry;}
+
 function formatJournalTime(value,full=false){return new Date(value).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",dateStyle:full?"full":"medium",timeStyle:"medium",hour12:true})}
 function updateJournalLivePrices(){
  document.querySelectorAll(".journal-live-price[data-live-symbol]").forEach(el=>{
@@ -360,13 +362,35 @@ async function loadTradeHistory(){
    return tb-ta;
   });
   const quantities=getJournalQuantities();
+  const closedResults=trades.map(([key,evs])=>{
+   const ordered=[...evs].sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at));
+   const first=ordered.find(e=>e.event_type==="ENTRY")||ordered[0];
+   const close=[...ordered].reverse().find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
+   if(!close)return null;
+   const ep=journalNum(first.entry_price??first.price),xp=journalNum(close.exit_price??close.price);
+   if(ep==null||xp==null)return null;
+   return first.side==="SELL"?ep-xp:xp-ep;
+  });
+  const realized=closedResults.filter(v=>v!=null);
+  const profitPoints=realized.filter(v=>v>0).reduce((a,v)=>a+v,0);
+  const lossPoints=realized.filter(v=>v<0).reduce((a,v)=>a+Math.abs(v),0);
+  const netPoints=profitPoints-lossPoints;
+  $("historyTradeCount").textContent=trades.length;
+  $("historyRunning").textContent=trades.length-realized.length;
+  $("historyWinning").textContent=realized.filter(v=>v>0).length;
+  $("historyLosing").textContent=realized.filter(v=>v<0).length;
+  $("historyProfitPoints").textContent="+"+fmt(profitPoints);
+  $("historyLossPoints").textContent="-"+fmt(lossPoints);
+  $("historyNetPoints").textContent=(netPoints>0?"+":"")+fmt(netPoints);
+
   $("historyRows").innerHTML=trades.length?trades.map(([key,events])=>{
    events.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at));
    const entryEvent=events.find(e=>e.event_type==="ENTRY")||events[0],last=events[events.length-1];
    const entryAt=entryEvent.entry_time||entryEvent.candle_time||entryEvent.occurred_at;
    const stopEvent=[...events].reverse().find(e=>e.event_type==="STOP_LOSS_HIT");
    const isClosed=!!stopEvent;
-   const status=isClosed?"STOP LOSS HIT":events.some(e=>e.event_type==="TARGET_HIT")?"TARGET HIT · TRAILING":last.status||"ACTIVE";
+   const tradePoints=journalTradePoints(events,entryEvent);
+   const status=isClosed?(tradePoints!=null&&tradePoints>=0?"CLOSED · PROFIT":"CLOSED · LOSS"):events.some(e=>e.event_type==="TARGET_HIT")?"TARGET HIT · TRAILING":last.status||"RUNNING";
    const entry=journalNum(entryEvent.entry_price??entryEvent.price);
    const exit=isClosed?journalNum(stopEvent.exit_price??stopEvent.price):null;
    const points=entry!=null&&exit!=null?(entryEvent.side==="SELL"?entry-exit:exit-entry):null;
