@@ -909,7 +909,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
      const nextSL=Math.max(pos.sl,lo),risk=cur.close-nextSL;
      const recalculateTarget=pos.targetHit;
-     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.first=pos.second;pos.second=cur;
+     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
      if(recalculateTarget&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;pos.targetHitTime=null;}
      pushEvent("BUY",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,"");
     }
@@ -931,7 +931,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high);
      const nextSL=Math.min(pos.sl,hi),risk=nextSL-cur.close;
      const recalculateTarget=pos.targetHit;
-     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.first=pos.second;pos.second=cur;
+     pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=nextSL;pos.second=cur;
      if(recalculateTarget&&risk>0){pos.target=cur.close-2*risk;pos.targetHit=false;pos.targetHitTime=null;}
      pushEvent("SELL",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,"");
     }
