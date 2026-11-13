@@ -389,7 +389,7 @@ async function loadTradeHistory(){
      }
      continue;
     }
-    if(activeTrade&&activeTrade.side===e.side)activeTrade.events.push(e);
+    if(activeTrade&&activeTrade.side===e.side&&(e.trade_key||e.event_key)===activeTrade.key)activeTrade.events.push(e);
    }
    if(activeTrade)trades.push([activeTrade.key,activeTrade.events]);
   }
