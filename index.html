@@ -208,6 +208,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
 
+
+.q-feature-nav{display:flex;gap:8px;overflow-x:auto;padding:14px 0 4px;scrollbar-width:thin}.q-nav,.q-action{white-space:nowrap;border:1px solid rgba(130,157,190,.25);border-radius:10px;background:linear-gradient(180deg,#1a2a40,#111d2e);color:#c3d0e0;padding:10px 13px;font:700 10px var(--font)}.q-nav.active{border-color:rgba(239,199,121,.75);background:linear-gradient(180deg,#4a3922,#211d17);color:#f3d18e}.q-feature-pages{margin:16px 0 24px}.q-page-head,.q-inline-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.q-page-head{margin:10px 0 18px}.q-page-head h2{font-size:24px;margin:6px 0}.q-page-head p,.q-help{font-size:11px;color:var(--muted);line-height:1.6}.q-page-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.q-data-status{font-size:10px;color:var(--muted)}.q-card{background:linear-gradient(145deg,rgba(19,33,52,.97),rgba(10,19,32,.98));border:1px solid rgba(126,153,185,.2);border-radius:16px;padding:18px;margin:12px 0;min-width:0}.q-card h3{font-size:14px;margin:0 0 12px;color:#f1d59b}.q-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0}.q-kpi{border:1px solid rgba(126,153,185,.2);background:#101e30;border-radius:12px;padding:14px;min-width:0}.q-kpi small{display:block;color:var(--muted);font-size:9px;letter-spacing:.7px}.q-kpi b{display:block;font:700 19px var(--mono);margin-top:8px;overflow-wrap:anywhere}.q-table-wrap{overflow:auto}.q-table{width:100%;border-collapse:collapse;font-size:11px;min-width:540px}.q-table th,.q-table td{text-align:left;padding:12px 10px;border-bottom:1px solid rgba(126,153,185,.15);white-space:nowrap}.q-table th{color:var(--muted);font-size:9px;letter-spacing:.7px}.q-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}.q-day,.q-day-name{min-height:64px;border:1px solid rgba(126,153,185,.15);border-radius:9px;background:#0d1a2a;padding:7px;color:var(--text);font-size:10px;text-align:left}.q-day-name{min-height:0;border:0;background:none;color:var(--muted);text-align:center}.q-day b{display:block;margin-bottom:6px}.q-day small{font:9px var(--mono)}.q-day.profit{border-color:#236b55;background:#102b27}.q-day.loss{border-color:#754050;background:#2a1721}.q-day.selected{outline:2px solid var(--gold)}.q-legend{display:flex;gap:16px;font-size:10px;margin-top:12px;color:var(--muted)}.q-input-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.q-input-grid label,.q-equity-inputs label{display:grid;gap:7px;color:var(--muted);font-size:10px}.q-input-grid input,.q-equity-inputs input{width:100%;background:#13243a;color:#f3f6fb;border:1px solid #3b506a;border-radius:9px;padding:12px;font:13px var(--mono);min-width:0}.q-empty{color:var(--muted);font-size:11px;padding:18px;text-align:center}.q-list{display:grid;gap:8px}.q-list-item{width:100%;text-align:left;border:1px solid rgba(126,153,185,.2);background:#0d1a2a;color:var(--text);border-radius:10px;padding:12px}.q-list-item.active{border-color:var(--gold)}.q-list-item b{display:block;color:#f0d294;font-size:11px}.q-list-item small{display:block;color:var(--muted);margin-top:5px;font-size:10px}.q-review-layout{display:grid;grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr);gap:12px}.q-review-detail{border:1px solid rgba(126,153,185,.2);border-radius:12px;padding:14px;min-height:170px;text-align:left}.q-review-detail textarea{width:100%;min-height:100px;background:#13243a;color:#f3f6fb;border:1px solid #3b506a;border-radius:9px;padding:10px;margin-top:10px}.q-chart{width:100%;height:260px;border:1px solid rgba(126,153,185,.15);border-radius:10px;overflow:hidden}.q-equity-inputs{display:flex;gap:9px;flex-wrap:wrap}.q-equity-inputs label{min-width:140px}.q-equity-inputs input{padding:8px}.q-notice{border-left:3px solid var(--gold);padding:10px;background:#101e30;border-radius:0 9px 9px 0;font-size:10px}.q-notice small{display:block;color:var(--muted);margin-top:4px}@media(max-width:650px){.q-page-head{align-items:flex-start}.q-input-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.q-review-layout{grid-template-columns:1fr}.q-day{min-height:54px;padding:5px}.q-day small{font-size:8px}.q-card{padding:13px}.q-page-head h2{font-size:20px}}
+
 </style>
 </head>
 <body>
@@ -218,6 +221,10 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </header>
 <div class="sebi-ticker" id="sebiDisclaimerTicker" role="note" aria-label="Investment disclaimer"><div class="sebi-ticker-track"><span>I AM NOT A SEBI-REGISTERED INVESTMENT ADVISER. TRADING INVOLVES RISK. PLEASE DO YOUR OWN RESEARCH.</span><span>I AM NOT A SEBI-REGISTERED INVESTMENT ADVISER. TRADING INVOLVES RISK. PLEASE DO YOUR OWN RESEARCH.</span></div></div>
 <section class="welcome"><div><div class="eyebrow">MARKET OVERVIEW</div><h1>Trade with clarity.</h1><p>Real-Time Markets. Precision Signals. Smarter Trading.</p></div><div class="market-status" id="connection">Connecting to Delta Exchange…</div></section>
+
+<nav class="q-feature-nav" id="quantoraFeatureNav" aria-label="Quantora pages">
+ <button class="q-nav active" data-page="terminal">⌂ Terminal</button><button class="q-nav" data-page="performance">▥ Performance</button><button class="q-nav" data-page="calendar">▦ Calendar</button><button class="q-nav" data-page="risk">◇ Risk Calculator</button><button class="q-nav" data-page="compare">⇄ Strategy Compare</button><button class="q-nav" data-page="sessions">◷ Sessions</button><button class="q-nav" data-page="alerts">♢ Alerts</button><button class="q-nav" data-page="equity">⌁ Equity Curve</button><button class="q-nav" data-page="review">▤ Trade Review</button>
+</nav>
 <section class="strategy-switch" aria-label="Strategy selector">
  <button class="strategy-tab active" id="classicTab" type="button">Dynamic Range Pro</button>
  <button class="strategy-tab" id="liquidityTab" type="button">Liquidity Sweep <span>15M</span></button>
@@ -275,6 +282,20 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
   </div>
   <div class="liq-footnote">Switch between UTC day (05:30 IST) and India day (00:00 IST) to compare previous-day levels and signals. Signals use closed 15-minute candles. This tool does not place orders.</div>
  </div>
+</section>
+
+<section id="qFeaturePages" class="q-feature-pages" hidden>
+ <div class="q-page-head"><div><div class="eyebrow">QUANTORA ANALYTICS</div><h2 id="qPageTitle">Performance Analytics</h2><p id="qPageSubtitle">All results are calculated from your saved Supabase trade events.</p></div><div class="q-page-actions"><span id="qDataStatus" class="q-data-status">Connecting to trade database…</span><button class="q-action" id="qRefreshData">↻ Refresh data</button></div></div>
+ <section class="q-page" id="qPage-performance">
+  <div class="q-kpis" id="qPerformanceKpis"></div><div class="q-card"><h3>Performance overview</h3><div class="q-table-wrap"><table class="q-table"><thead><tr><th>Metric</th><th>All strategies</th><th>Dynamic Range Pro</th><th>Liquidity Sweep</th></tr></thead><tbody id="qPerformanceTable"></tbody></table></div></div>
+ </section>
+ <section class="q-page" id="qPage-calendar" hidden><div class="q-card"><div class="q-inline-head"><button class="q-action" id="qCalPrev">← Previous</button><h3 id="qCalendarMonth">Month</h3><button class="q-action" id="qCalNext">Next →</button></div><div class="q-calendar" id="qCalendar"></div><div class="q-legend"><span class="positive">● Profitable</span><span class="negative">● Losing</span><span>● No closed trades</span></div></div><div class="q-card"><h3>Selected day</h3><div id="qCalendarDetail" class="q-empty">Select a date to inspect its trades.</div></div></section>
+ <section class="q-page" id="qPage-risk" hidden><div class="q-card"><h3>Position sizing & risk plan</h3><p class="q-help">Calculator only — it does not place orders or modify strategy signals.</p><div class="q-input-grid"><label>Account capital (USD)<input id="qRiskCapital" type="number" min="0" step="any" value="1000"></label><label>Risk per trade (%)<input id="qRiskPercent" type="number" min="0.01" max="100" step="any" value="1"></label><label>Entry price<input id="qRiskEntry" type="number" min="0" step="any" placeholder="Entry price"></label><label>Stop-loss price<input id="qRiskStop" type="number" min="0" step="any" placeholder="Stop loss"></label><label>Target price<input id="qRiskTarget" type="number" min="0" step="any" placeholder="Target"></label><label>Contract multiplier<input id="qRiskMultiplier" type="number" min="0.00000001" step="any" value="1"></label></div><div class="q-kpis" id="qRiskResults"></div><p class="q-help">Position size is an estimate: risk amount ÷ (entry-to-stop distance × contract multiplier). Check the exchange contract specifications, fees, leverage and minimum order size before trading.</p></div></section>
+ <section class="q-page" id="qPage-compare" hidden><div class="q-kpis" id="qCompareKpis"></div><div class="q-card"><h3>Strategy performance</h3><div class="q-table-wrap"><table class="q-table"><thead><tr><th>Strategy</th><th>Trades</th><th>Wins</th><th>Losses</th><th>Win rate</th><th>Net points</th><th>Profit factor</th></tr></thead><tbody id="qCompareTable"></tbody></table></div></div><div class="q-card"><h3>Market / timeframe breakdown</h3><div class="q-table-wrap"><table class="q-table"><thead><tr><th>Strategy</th><th>Market</th><th>Timeframe</th><th>Trades</th><th>Win rate</th><th>Net points</th></tr></thead><tbody id="qBreakdownTable"></tbody></table></div></div></section>
+ <section class="q-page" id="qPage-sessions" hidden><div class="q-kpis" id="qSessionKpis"></div><div class="q-card"><h3>Entry-time session analysis</h3><div class="q-table-wrap"><table class="q-table"><thead><tr><th>Session (UTC)</th><th>Trades</th><th>Wins</th><th>Win rate</th><th>Net points</th></tr></thead><tbody id="qSessionTable"></tbody></table></div><p class="q-help">Sessions are approximate UTC windows: Asia 00:00–08:59, London 07:00–15:59, New York 13:00–21:59. Overlap trades can appear in more than one session.</p></div></section>
+ <section class="q-page" id="qPage-alerts" hidden><div class="q-card"><div class="q-inline-head"><div><h3>Signal & trade alerts</h3><p class="q-help">New events are read from the same Supabase trade history.</p></div><button class="q-action" id="qEnableNotifications">Enable browser notifications</button></div><div id="qNotificationStatus" class="q-help">Notifications are off until you enable them.</div><div id="qAlertsList" class="q-list"></div></div></section>
+ <section class="q-page" id="qPage-equity" hidden><div class="q-card"><div class="q-inline-head"><div><h3>Equity curve</h3><p class="q-help">Illustrative equity from closed trade points. Set starting capital and point value for your contract.</p></div><div class="q-equity-inputs"><label>Starting capital<input id="qEquityCapital" type="number" min="0" step="any" value="1000"></label><label>Value per point<input id="qPointValue" type="number" min="0" step="any" value="1"></label></div></div><div id="qEquityStats" class="q-kpis"></div><div class="q-chart" id="qEquityChart"></div></div></section>
+ <section class="q-page" id="qPage-review" hidden><div class="q-card"><h3>Trade review</h3><p class="q-help">Select a closed or running trade to review its event timeline and add a private note on this device.</p><div class="q-review-layout"><div id="qReviewList" class="q-list"></div><div id="qReviewDetail" class="q-review-detail q-empty">Choose a trade to see its details.</div></div></div></section>
 </section>
 <footer class="footer"><span>QUANTORA TERMINAL · VERSION 1.0</span><span>For research and education only. Not financial advice.</span></footer>
 </div>
@@ -490,7 +511,7 @@ $("historyRows")?.addEventListener("input",e=>{
 $("historyRefresh")?.addEventListener("click",loadTradeHistory);
 $("historySymbolFilter")?.addEventListener("change",loadTradeHistory);
 $("historyTimeframeFilter")?.addEventListener("change",loadTradeHistory);
-$("tradeJournalOpen")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=false;loadTradeHistory();document.body.style.overflow="hidden"});
+$("tradeJournalOpen")?.addEventListener("click",()=>qShowPage("performance"));
 $("tradeJournalClose")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=true;document.body.style.overflow=""});
 $("tradeJournalModal")?.addEventListener("click",e=>{if(e.target===$("tradeJournalModal")){$("tradeJournalModal").hidden=true;document.body.style.overflow=""}});
 
@@ -966,6 +987,147 @@ async function scanAllMarketsAndTimeframes(){
  }catch(e){console.warn("Background strategy scan:",e)}
  finally{backgroundScanBusy=false}
 }
+
+
+// ---------------- QUANTORA ANALYTICS PAGES (read-only Supabase analytics) ----------------
+const qState={page:"terminal",trades:[],events:[],calendarDate:new Date(),selectedDay:null,selectedTrade:null,alertSeen:new Set(),loaded:false};
+const qFmt=n=>Number.isFinite(Number(n))?Number(n).toLocaleString("en-US",{maximumFractionDigits:2}):"—";
+const qEscape=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+async function qFetchEvents(){
+ const all=[];let offset=0,limit=1000;
+ while(true){
+  const url=SUPABASE_URL+"/rest/v1/trade_history_events?select=*&order=candle_time.asc,id.asc&limit="+limit+"&offset="+offset;
+  const r=await fetch(url,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Prefer:"count=none"}});
+  if(!r.ok)throw Error("Supabase read "+r.status+" "+(await r.text()).slice(0,130));
+  const batch=await r.json();all.push(...batch);if(batch.length<limit)break;offset+=limit;
+ }
+ return all;
+}
+function qBuildTrades(rows){
+ const streams=new Map();
+ rows.forEach(e=>{const k=[e.strategy,e.symbol,e.timeframe].join("|");if(!streams.has(k))streams.set(k,[]);streams.get(k).push(e)});
+ const out=[];
+ for(const [stream,evs] of streams){
+  evs.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at)||((a.event_type==="ENTRY"?1:0)-(b.event_type==="ENTRY"?1:0)));
+  let active=null;
+  for(const e of evs){
+   if(e.event_type==="ENTRY"){if(!active)active={key:e.trade_key||e.event_key,events:[e]};continue}
+   if(e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED"){
+    if(active&&active.events[0].side===e.side){active.events.push(e);out.push(active);active=null}continue;
+   }
+   if(active&&active.events[0].side===e.side&&(e.trade_key||e.event_key)===active.key)active.events.push(e);
+  }
+  if(active)out.push(active);
+ }
+ return out.map(t=>{
+  const es=t.events.slice().sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at));
+  const entry=es.find(e=>e.event_type==="ENTRY")||es[0],close=es.find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
+  const ep=Number(entry.entry_price??entry.price),xp=close?Number(close.exit_price??close.price):null;
+  const points=close&&Number.isFinite(ep)&&Number.isFinite(xp)?(entry.side==="SELL"?ep-xp:xp-ep):null;
+  return {key:t.key,events:es,entry,close,points,status:close?(points>=0?"CLOSED · PROFIT":"CLOSED · LOSS"):"RUNNING",date:new Date(entry.entry_time||entry.candle_time||entry.occurred_at)};
+ }).sort((a,b)=>b.date-a.date);
+}
+function qStats(trades){
+ const closed=trades.filter(t=>t.points!=null),wins=closed.filter(t=>t.points>0),loss=closed.filter(t=>t.points<0);
+ const grossWin=wins.reduce((s,t)=>s+t.points,0),grossLoss=Math.abs(loss.reduce((s,t)=>s+t.points,0));
+ return {total:trades.length,closed:closed.length,running:trades.length-closed.length,wins:wins.length,losses:loss.length,winRate:closed.length?wins.length/closed.length*100:0,grossWin,grossLoss,net:grossWin-grossLoss,pf:grossLoss?grossWin/grossLoss:grossWin?Infinity:0,avg:closed.length?closed.reduce((s,t)=>s+t.points,0)/closed.length:0};
+}
+function qKpi(label,value,sub=""){return '<div class="q-kpi"><small>'+label+'</small><b>'+value+'</b>'+(sub?'<small>'+sub+'</small>':"")+'</div>'}
+function qRenderPerformance(){
+ const all=qStats(qState.trades),drp=qStats(qState.trades.filter(t=>t.entry.strategy==="Dynamic Range Pro")),liq=qStats(qState.trades.filter(t=>t.entry.strategy==="Liquidity Sweep"));
+ $("qPerformanceKpis").innerHTML=qKpi("CLOSED TRADES",all.closed)+qKpi("WIN RATE",all.winRate.toFixed(1)+"%")+qKpi("NET POINTS",(all.net>0?"+":"")+qFmt(all.net))+qKpi("PROFIT FACTOR",all.pf===Infinity?"∞":qFmt(all.pf))+qKpi("RUNNING TRADES",all.running)+qKpi("AVERAGE / TRADE",qFmt(all.avg));
+ const rows=[["Trades",all,drp,liq,"total"],["Wins",all,drp,liq,"wins"],["Losses",all,drp,liq,"losses"],["Win rate",all,drp,liq,"winRate"],["Gross profit (pts)",all,drp,liq,"grossWin"],["Gross loss (pts)",all,drp,liq,"grossLoss"],["Net points",all,drp,liq,"net"],["Profit factor",all,drp,liq,"pf"]];
+ $("qPerformanceTable").innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td>'+r.slice(1,4).map(x=>'<td>'+((r[4]==="winRate"?x[r[4]].toFixed(1)+"%":r[4]==="pf"&&x[r[4]]===Infinity?"∞":qFmt(x[r[4]])))+'</td>').join("")+'</tr>').join("");
+}
+function qRenderCompare(){
+ const strategies=["Dynamic Range Pro","Liquidity Sweep"],stats=strategies.map(s=>[s,qStats(qState.trades.filter(t=>t.entry.strategy===s))]);
+ $("qCompareKpis").innerHTML=stats.map(([s,x])=>qKpi(s.toUpperCase(),x.closed+" closed",x.winRate.toFixed(1)+"% wins · "+(x.net>0?"+":"")+qFmt(x.net)+" pts")).join("");
+ $("qCompareTable").innerHTML=stats.map(([s,x])=>'<tr><td>'+s+'</td><td>'+x.closed+'</td><td>'+x.wins+'</td><td>'+x.losses+'</td><td>'+x.winRate.toFixed(1)+'%</td><td>'+qFmt(x.net)+'</td><td>'+(x.pf===Infinity?"∞":qFmt(x.pf))+'</td></tr>').join("");
+ const groups=new Map();qState.trades.filter(t=>t.points!=null).forEach(t=>{const k=[t.entry.strategy,t.entry.symbol,t.entry.timeframe].join("|");if(!groups.has(k))groups.set(k,[]);groups.get(k).push(t)});
+ $("qBreakdownTable").innerHTML=[...groups].map(([k,ts])=>{const [s,m,tf]=k.split("|"),st=qStats(ts);return '<tr><td>'+s+'</td><td>'+m+'</td><td>'+tf+'</td><td>'+st.closed+'</td><td>'+st.winRate.toFixed(1)+'%</td><td>'+qFmt(st.net)+'</td></tr>'}).join("")||'<tr><td colspan="6">No closed trades yet.</td></tr>';
+}
+function qRenderCalendar(){
+ const d=qState.calendarDate,y=d.getFullYear(),m=d.getMonth(),first=new Date(y,m,1),days=new Date(y,m+1,0).getDate(),start=(first.getDay()+6)%7;
+ $("qCalendarMonth").textContent=d.toLocaleDateString("en-IN",{month:"long",year:"numeric"});
+ const byDay=new Map();qState.trades.filter(t=>t.points!=null).forEach(t=>{const k=t.date.getFullYear()+"-"+t.date.getMonth()+"-"+t.date.getDate();if(!byDay.has(k))byDay.set(k,[]);byDay.get(k).push(t)});
+ let html=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(x=>'<div class="q-day-name">'+x+'</div>').join("");
+ for(let i=0;i<start;i++)html+='<div class="q-day" style="visibility:hidden"></div>';
+ for(let n=1;n<=days;n++){const key=y+"-"+m+"-"+n,ts=byDay.get(key)||[],net=ts.reduce((s,t)=>s+t.points,0),cls=ts.length?(net>=0?"profit":"loss"):"",sel=qState.selectedDay===key?"selected":"";html+='<button class="q-day '+cls+' '+sel+'" data-day="'+key+'"><b>'+n+'</b><small>'+(ts.length?(net>0?"+":"")+qFmt(net)+" pts": "—")+'</small></button>'}
+ $("qCalendar").innerHTML=html;
+ $("qCalendar").querySelectorAll("[data-day]").forEach(b=>b.addEventListener("click",()=>{qState.selectedDay=b.dataset.day;qRenderCalendar();const ts=byDay.get(b.dataset.day)||[];$("qCalendarDetail").innerHTML=ts.length?ts.map(t=>'<div class="q-notice">'+qEscape(t.entry.symbol)+' · '+qEscape(t.entry.side)+' · '+qEscape(t.entry.strategy)+'<small>'+qEscape(t.entry.timeframe)+' · '+qFmt(t.points)+' points</small></div>').join(""):'No closed trades recorded for this date.'}));
+}
+function qRenderSessions(){
+ const windows=[["Asia","00:00–08:59",0,9],["London","07:00–15:59",7,16],["New York","13:00–21:59",13,22]];
+ const rows=windows.map(([name,range,start,end])=>{const ts=qState.trades.filter(t=>t.points!=null&&t.date.getUTCHours()>=start&&t.date.getUTCHours()<end),s=qStats(ts);return {name,range,s}});
+ $("qSessionKpis").innerHTML=rows.map(x=>qKpi(x.name.toUpperCase(),x.s.closed+" trades",x.s.winRate.toFixed(1)+"% wins · "+qFmt(x.s.net)+" pts")).join("");
+ $("qSessionTable").innerHTML=rows.map(x=>'<tr><td>'+x.name+' · '+x.range+'</td><td>'+x.s.closed+'</td><td>'+x.s.wins+'</td><td>'+x.s.winRate.toFixed(1)+'%</td><td>'+qFmt(x.s.net)+'</td></tr>').join("");
+}
+function qRenderRisk(){
+ const v=id=>Number($(id).value),capital=v("qRiskCapital"),pct=v("qRiskPercent"),entry=v("qRiskEntry"),stop=v("qRiskStop"),target=v("qRiskTarget"),mult=v("qRiskMultiplier");
+ const valid=[capital,pct,entry,stop,mult].every(Number.isFinite)&&capital>0&&pct>0&&pct<=100&&entry>0&&stop>0&&mult>0&&entry!==stop;
+ if(!valid){$("qRiskResults").innerHTML=qKpi("RISK AMOUNT","—")+qKpi("POSITION SIZE","Enter valid values")+qKpi("RISK / REWARD","—");return}
+ const risk=capital*pct/100,dist=Math.abs(entry-stop),size=risk/(dist*mult),reward=Number.isFinite(target)&&target>0?Math.abs(target-entry)*size*mult:null,rr=target>0?Math.abs(target-entry)/dist:null;
+ $("qRiskResults").innerHTML=qKpi("RISK AMOUNT","$"+qFmt(risk))+qKpi("STOP DISTANCE",qFmt(dist))+qKpi("EST. POSITION SIZE",qFmt(size))+qKpi("POTENTIAL REWARD",reward==null?"—":"$"+qFmt(reward))+qKpi("RISK / REWARD",rr==null?"—":"1 : "+qFmt(rr));
+}
+function qRenderEquity(){
+ const cap=Number($("qEquityCapital").value),point=Number($("qPointValue").value),closed=qState.trades.filter(t=>t.points!=null).sort((a,b)=>a.date-b.date);
+ if(!(cap>=0&&point>=0)){ $("qEquityChart").textContent="Enter valid starting capital and point value.";return}
+ let balance=cap,peak=cap,maxDD=0;const vals=[balance];closed.forEach(t=>{balance+=t.points*point;peak=Math.max(peak,balance);maxDD=Math.max(maxDD,peak-balance);vals.push(balance)});
+ $("qEquityStats").innerHTML=qKpi("CURRENT EQUITY","$"+qFmt(balance))+qKpi("NET CHANGE","$"+qFmt(balance-cap))+qKpi("MAX DRAWDOWN","$"+qFmt(maxDD))+qKpi("CLOSED TRADES",closed.length);
+ const w=900,h=220,p=18,min=Math.min(...vals),max=Math.max(...vals),span=max-min||1,pts=vals.map((v,i)=>(p+i*(w-2*p)/Math.max(1,vals.length-1))+","+(h-p-(v-min)*(h-2*p)/span)).join(" ");
+ $("qEquityChart").innerHTML='<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="100%" role="img" aria-label="Equity curve"><line x1="0" y1="'+(h-p)+'" x2="'+w+'" y2="'+(h-p)+'" stroke="#31445d"/><polyline points="'+pts+'" fill="none" stroke="#efc779" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/><text x="18" y="18" fill="#91a2b8" font-size="11">Start 
+ tickClock();setInterval(tickClock,1000);initChart();loadTradeHistory();setInterval(loadTradeHistory,300000);setInterval(()=>{if(qState.page!=="terminal")qLoadAnalytics(true)},60000);
+ await Promise.allSettled([refreshTickers(),refreshChart()]);
+ setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
+}
+start();
+</script>
+</body>
+</html>+qFmt(cap)+' · End 
+ tickClock();setInterval(tickClock,1000);initChart();loadTradeHistory();setInterval(loadTradeHistory,300000);
+ await Promise.allSettled([refreshTickers(),refreshChart()]);
+ setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
+}
+start();
+</script>
+</body>
+</html>+qFmt(balance)+'</text></svg>';
+}
+function qRenderReview(){
+ $("qReviewList").innerHTML=qState.trades.map((t,i)=>'<button class="q-list-item '+(qState.selectedTrade===t.key?"active":"")+'" data-review="'+qEscape(t.key)+'"><b>'+qEscape(t.entry.symbol)+' · '+qEscape(t.entry.side)+' · '+qEscape(t.entry.strategy)+'</b><small>'+qEscape(t.entry.timeframe)+' · '+t.status+' · '+qEscape(t.date.toLocaleString())+'</small></button>').join("")||'<div class="q-empty">No trades found.</div>';
+ $("qReviewList").querySelectorAll("[data-review]").forEach(b=>b.addEventListener("click",()=>{qState.selectedTrade=b.dataset.review;qRenderReview()}));
+ const t=qState.trades.find(x=>x.key===qState.selectedTrade);
+ if(!t){$("qReviewDetail").innerHTML='<div class="q-empty">Choose a trade to see its details.</div>';return}
+ const noteKey="quantora_review_note_"+t.key;let note="";try{note=localStorage.getItem(noteKey)||""}catch(_){}
+ $("qReviewDetail").innerHTML='<h3>'+qEscape(t.entry.symbol)+' · '+qEscape(t.entry.side)+'</h3><p class="q-help">'+qEscape(t.entry.strategy)+' · '+qEscape(t.entry.timeframe)+' · '+qEscape(t.status)+'</p><div class="q-notice">Entry: '+qFmt(Number(t.entry.entry_price??t.entry.price))+' · Exit: '+(t.close?qFmt(Number(t.close.exit_price??t.close.price)):"Open")+' · P&L: '+(t.points==null?"Pending":qFmt(t.points)+" points")+'</div><div class="history-timeline">'+t.events.map(e=>'<div class="history-event-card"><div class="history-event-top"><b>'+qEscape(e.event_type)+'</b><time>'+qEscape(new Date(e.candle_time||e.occurred_at).toLocaleString())+'</time></div><div class="history-event-values">Price: <strong>'+qFmt(Number(e.price))+'</strong></div></div>').join("")+'</div><label class="q-help">PRIVATE REVIEW NOTES<textarea id="qReviewNote" placeholder="What went well? What can be improved?">'+qEscape(note)+'</textarea></label><button class="q-action" id="qSaveReviewNote">Save note on this device</button>';
+ $("qSaveReviewNote").addEventListener("click",()=>{try{localStorage.setItem(noteKey,$("qReviewNote").value);$("qSaveReviewNote").textContent="✓ Saved on this device"}catch(e){$("qSaveReviewNote").textContent="Could not save note"}});
+}
+function qRenderAlerts(){
+ const list=$("qAlertsList"),events=qState.events.slice().sort((a,b)=>new Date(b.candle_time||b.occurred_at)-new Date(a.candle_time||a.occurred_at)).slice(0,100);
+ list.innerHTML=events.map(e=>'<div class="q-notice">'+qEscape(e.event_type)+' · '+qEscape(e.symbol)+' · '+qEscape(e.side)+'<small>'+qEscape(e.strategy)+' · '+qEscape(e.timeframe)+' · '+qEscape(new Date(e.candle_time||e.occurred_at).toLocaleString())+' · '+qFmt(Number(e.price))+'</small></div>').join("")||'<div class="q-empty">No saved events yet.</div>';
+}
+function qRenderAll(){qRenderPerformance();qRenderCompare();qRenderSessions();qRenderCalendar();qRenderRisk();qRenderEquity();qRenderReview();qRenderAlerts()}
+async function qLoadAnalytics(silent=false){
+ try{$("qDataStatus").textContent="Loading saved trades…";const rows=await qFetchEvents();qState.events=rows;qState.trades=qBuildTrades(rows);qState.loaded=true;$("qDataStatus").textContent="Connected · "+rows.length+" events · "+qState.trades.length+" trades";qRenderAll()}
+ catch(e){$("qDataStatus").textContent="Database error · "+e.message;console.error("Quantora analytics:",e);if(!silent)alert("Could not load analytics: "+e.message)}
+}
+function qShowPage(page){
+ qState.page=page;const terminal=page==="terminal";
+ $("classicView").hidden=!terminal;$("liquidityView").hidden=!terminal;$("qFeaturePages").hidden=terminal;
+ document.querySelectorAll(".q-nav").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
+ document.querySelectorAll(".q-page").forEach(el=>el.hidden=el.id!=="qPage-"+page);
+ const titles={performance:["Performance Analytics","Win rate, profit factor and closed-trade statistics."],calendar:["Trading Calendar","Daily and monthly results from your saved trade history."],risk:["Risk Calculator","Estimate position size from your capital and stop distance."],compare:["Strategy Comparison","Compare both strategy engines using recorded trades."],sessions:["Session Analysis","Compare entry performance across major market sessions."],alerts:["Alerts Center","Review saved strategy events and enable browser notifications."],equity:["Equity Curve","Visualize cumulative results using your chosen point value."],review:["Trade Review","Inspect individual trade timelines and keep private review notes."]};
+ if(terminal){$("classicView").hidden=false; if(!$("liquidityView").hidden){} }
+ else{$("qPageTitle").textContent=titles[page][0];$("qPageSubtitle").textContent=titles[page][1];qLoadAnalytics(true)}
+ if(page==="risk")qRenderRisk();if(page==="equity")qRenderEquity();
+}
+document.querySelectorAll(".q-nav").forEach(b=>b.addEventListener("click",()=>qShowPage(b.dataset.page)));
+$("qRefreshData").addEventListener("click",()=>qLoadAnalytics(false));
+["qRiskCapital","qRiskPercent","qRiskEntry","qRiskStop","qRiskTarget","qRiskMultiplier"].forEach(id=>$(id).addEventListener("input",qRenderRisk));
+["qEquityCapital","qPointValue"].forEach(id=>$(id).addEventListener("input",qRenderEquity));
+$("qCalPrev").addEventListener("click",()=>{qState.calendarDate.setMonth(qState.calendarDate.getMonth()-1);qRenderCalendar()});
+$("qCalNext").addEventListener("click",()=>{qState.calendarDate.setMonth(qState.calendarDate.getMonth()+1);qRenderCalendar()});
+$("qEnableNotifications").addEventListener("click",async()=>{if(!("Notification" in window)){$("qNotificationStatus").textContent="This browser does not support notifications.";return}const p=await Notification.requestPermission();$("qNotificationStatus").textContent=p==="granted"?"Notifications enabled while this page is open.":"Notification permission: "+p});
 
 async function start(){
  tickClock();setInterval(tickClock,1000);initChart();loadTradeHistory();setInterval(loadTradeHistory,300000);
