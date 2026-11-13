@@ -347,10 +347,12 @@ async function loadTradeHistory(){
    (tfFilter==="ALL"||String(x.timeframe||"").trim().toLowerCase()===tfFilter.trim().toLowerCase())
   );
   $("historyConnection").textContent="Connected · trade history ready";
-  $("historyTotal").textContent=rows.length;
-  $("historyEntries").textContent=rows.filter(x=>x.event_type==="ENTRY").length;
-  $("historyTargets").textContent=rows.filter(x=>x.event_type==="TARGET_HIT").length;
-  $("historyStops").textContent=rows.filter(x=>x.event_type==="STOP_LOSS_HIT").length;
+  // Legacy counters are not present in the current premium Journal layout.
+  // Keep this compatibility-safe so missing optional elements cannot stop history rendering.
+  if($("historyTotal"))$("historyTotal").textContent=rows.length;
+  if($("historyEntries"))$("historyEntries").textContent=rows.filter(x=>x.event_type==="ENTRY").length;
+  if($("historyTargets"))$("historyTargets").textContent=rows.filter(x=>x.event_type==="TARGET_HIT").length;
+  if($("historyStops"))$("historyStops").textContent=rows.filter(x=>x.event_type==="STOP_LOSS_HIT").length;
   const grouped=new Map();
   rows.forEach(x=>{const k=x.trade_key||x.event_key;if(!grouped.has(k))grouped.set(k,[]);grouped.get(k).push(x)});
   const trades=[...grouped.entries()].sort((a,b)=>{
