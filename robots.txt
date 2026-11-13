@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://quantoraofficial6.github.io/quantora-trading/sitemap.xml
