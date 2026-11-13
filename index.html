@@ -39,19 +39,30 @@
   }catch(e){$("miDerivStatus").textContent="No live derivatives snapshot for "+symbol+": "+e.message+". Instrument may not be listed on this venue."}
  }
  async function miCOT(){
-  const asset=miState.asset,ds="https://publicreporting.cftc.gov/resource/72hh-3qpy.json";
-  $("miCotDate").textContent="—";$("miCotNet").textContent="—";$("miCotOI").textContent="—";
+  const asset=miState.asset,isGold=asset==="GOLD";
+  const dataset=isGold?"72hh-3qpy":"gpe5-46if";
   const keyword=asset==="GOLD"?"GOLD":asset==="BTC"?"BITCOIN":"ETHER";
-  const url=ds+"?"+new URLSearchParams({$select:"report_date_as_yyyy_mm_dd,contract_market_name,open_interest_all,m_money_positions_long_all,m_money_positions_short_all", $where:"upper(contract_market_name) like '%"+keyword+"%'",$order:"report_date_as_yyyy_mm_dd DESC",$limit:"1"});
+  const longField=isGold?"m_money_positions_long_all":"lev_money_positions_long";
+  const shortField=isGold?"m_money_positions_short_all":"lev_money_positions_short";
+  const groupLabel=isGold?"Managed Money":"Leveraged Money";
+  $("miCotDate").textContent="—";$("miCotNet").textContent="—";$("miCotOI").textContent="—";
+  const params=new URLSearchParams({
+   "$select":"report_date_as_yyyy_mm_dd,contract_market_name,open_interest_all,"+longField+","+shortField,
+   "$where":"contract_market_name like '%"+keyword+"%'",
+   "$order":"report_date_as_yyyy_mm_dd DESC",
+   "$limit":"1"
+  });
+  const url="https://publicreporting.cftc.gov/resource/"+dataset+".json?"+params.toString();
   try{
    const rows=await miJson(url),r=rows[0];
    if(!r)throw Error("No matching CFTC futures contract found");
-   const net=Number(r.m_money_positions_long_all)-Number(r.m_money_positions_short_all);
+   const net=Number(r[longField])-Number(r[shortField]);
+   if(!Number.isFinite(net))throw Error("Position fields unavailable in report");
    $("miCotDate").textContent=miDate(r.report_date_as_yyyy_mm_dd);
    $("miCotNet").textContent=(net>0?"+":"")+miFmt(net);
    $("miCotNet").className=net>=0?"mi-positive":"mi-negative";
    $("miCotOI").textContent=miFmt(r.open_interest_all);
-   $("miCotStatus").textContent=r.contract_market_name+" · Managed Money net = long minus short · weekly CFTC report.";
+   $("miCotStatus").textContent=r.contract_market_name+" · "+groupLabel+" net = long minus short · CFTC weekly report.";
   }catch(e){$("miCotStatus").textContent="CFTC data unavailable for "+asset+": "+e.message+". Open the official report link to inspect available contracts."}
  }
  async function miNews(){
