@@ -895,7 +895,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
     if(cur.close<pos.sl){
      pushEvent("BUY","STOP LOSS HIT · BUY TRAILING SL",cur.close,cur.time,"Trailing stop hit on candle close; reversed to SELL");
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),risk=hi-cur.close;
-     pos=risk>0?{side:"SELL",entry:cur.close,sl:hi,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false}:null;
+     pos=risk>0?{side:"SELL",entry:cur.close,sl:pos.second.high,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false}:null;
      if(pos)pushEvent("SELL","SELL ENTRY · SL REVERSAL",cur.close,cur.time,"New SELL position opened immediately after BUY trailing stop hit.");
      lastEvent="SELL";
      continue;
@@ -917,7 +917,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
     if(cur.close>pos.sl){
      pushEvent("SELL","STOP LOSS HIT · SELL TRAILING SL",cur.close,cur.time,"Trailing stop hit on candle close; reversed to BUY");
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),risk=cur.close-lo;
-     pos=risk>0?{side:"BUY",entry:cur.close,sl:lo,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false}:null;
+     pos=risk>0?{side:"BUY",entry:cur.close,sl:pos.second.low,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false}:null;
      if(pos)pushEvent("BUY","BUY ENTRY · SL REVERSAL",cur.close,cur.time,"New BUY position opened immediately after SELL trailing stop hit.");
      lastEvent="BUY";
      continue;
@@ -940,13 +940,13 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
    if(green(prev)&&green(cur)&&cur.close>prev.high){
     const hi=Math.max(prev.high,cur.high),lo=Math.min(prev.low,cur.low),risk=cur.close-lo;
     if(risk>0){
-     pos={side:"BUY",entry:cur.close,sl:lo,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false};
+     pos={side:"BUY",entry:cur.close,sl:prev.low,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false};
      pushEvent("BUY","BUY ENTRY",cur.close,cur.time,"Two green candles · second closed above first high");lastEvent="BUY";
     }
    }else if(red(prev)&&red(cur)&&cur.close<prev.low){
     const hi=Math.max(prev.high,cur.high),lo=Math.min(prev.low,cur.low),risk=hi-cur.close;
     if(risk>0){
-     pos={side:"SELL",entry:cur.close,sl:hi,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false};
+     pos={side:"SELL",entry:cur.close,sl:prev.high,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,second:cur,entryTime:cur.time,targetHit:false};
      pushEvent("SELL","SELL ENTRY",cur.close,cur.time,"Two red candles · second closed below first low");lastEvent="SELL";
     }
    }
