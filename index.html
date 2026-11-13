@@ -1087,9 +1087,7 @@ start();
  setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
 }
 start();
-</script>
-</body>
-</html>+qFmt(balance)+'</text></svg>';
++qFmt(balance)+'</text></svg>';
 }
 function qRenderReview(){
  $("qReviewList").innerHTML=qState.trades.map((t,i)=>'<button class="q-list-item '+(qState.selectedTrade===t.key?"active":"")+'" data-review="'+qEscape(t.key)+'"><b>'+qEscape(t.entry.symbol)+' · '+qEscape(t.entry.side)+' · '+qEscape(t.entry.strategy)+'</b><small>'+qEscape(t.entry.timeframe)+' · '+t.status+' · '+qEscape(t.date.toLocaleString())+'</small></button>').join("")||'<div class="q-empty">No trades found.</div>';
