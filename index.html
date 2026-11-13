@@ -280,7 +280,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 </div>
 
 <div class="journal-modal" id="tradeJournalModal" hidden><div class="journal-shell"><div class="journal-modal-head"><div><div class="history-trade-title">QUANTORA · TRADE ANALYTICS</div><div class="history-muted">Complete signal and trade-event history</div></div><button type="button" id="tradeJournalClose" class="journal-close">✕ Close</button></div>
-<section class="trade-history-panel" id="tradeHistoryPanel"><div class="trade-history-head"><div><h2>TRADE HISTORY</h2><div class="history-muted" id="historyConnection">Connected · automatic trade saving</div></div><div class="history-actions"><button type="button" id="historyRefresh">↻ Refresh</button></div></div><div class="history-filters"><div class="history-filter"><label for="historySymbolFilter">COIN / MARKET</label><select id="historySymbolFilter"><option value="ALL">All coins</option><option value="BTCUSD">BTC · Bitcoin</option><option value="ETHUSD">ETH · Ethereum</option><option value="SOLUSD">SOL · Solana</option><option value="XRPUSD">XRP</option><option value="XAUTUSD">GOLD · Tether Gold</option></select></div><div class="history-filter"><label for="historyTimeframeFilter">TIMEFRAME</label><select id="historyTimeframeFilter"><option value="ALL">All timeframes</option><option value="1m">1 Minute</option><option value="5m">5 Minutes</option><option value="15m">15 Minutes</option><option value="1h">1 Hour</option><option value="2h">2 Hours</option><option value="4h">4 Hours</option><option value="1d">1 Day</option></select></div></div><div class="history-stats"><span>TRADES: <b id="historyTradeCount">—</b></span><span>RUNNING: <b id="historyRunning">—</b></span><span>WINNING: <b id="historyWinning">—</b></span><span>LOSING: <b id="historyLosing">—</b></span><span>PROFIT POINTS: <b id="historyProfitPoints">—</b></span><span>LOSS POINTS: <b id="historyLossPoints">—</b></span><span>NET POINTS: <b id="historyNetPoints">—</b></span></div><div class="history-groups" id="historyRows"><div class="history-muted">Loading trade history…</div></div></section></div></div>
+<section class="trade-history-panel" id="tradeHistoryPanel"><div class="trade-history-head"><div><h2>TRADE HISTORY</h2><div class="history-muted" id="historyConnection">Connected · automatic trade saving</div></div><div class="history-actions"><button type="button" id="historyRefresh">↻ Refresh</button></div></div><div class="history-filters"><div class="history-filter"><label for="historySymbolFilter">COIN / MARKET</label><select id="historySymbolFilter"><option value="" selected disabled>Select coin</option><option value="BTCUSD">BTC · Bitcoin</option><option value="ETHUSD">ETH · Ethereum</option><option value="SOLUSD">SOL · Solana</option><option value="XRPUSD">XRP</option><option value="XAUTUSD">GOLD · Tether Gold</option></select></div><div class="history-filter"><label for="historyTimeframeFilter">TIMEFRAME</label><select id="historyTimeframeFilter"><option value="" selected disabled>Select timeframe</option><option value="1m">1 Minute</option><option value="5m">5 Minutes</option><option value="15m">15 Minutes</option><option value="1h">1 Hour</option><option value="2h">2 Hours</option><option value="4h">4 Hours</option><option value="1d">1 Day</option></select></div></div><div class="history-stats" id="historyStats" hidden><span>TRADES: <b id="historyTradeCount">—</b></span><span>RUNNING: <b id="historyRunning">—</b></span><span>WINNING: <b id="historyWinning">—</b></span><span>LOSING: <b id="historyLosing">—</b></span><span>PROFIT POINTS: <b id="historyProfitPoints">—</b></span><span>LOSS POINTS: <b id="historyLossPoints">—</b></span><span>NET POINTS: <b id="historyNetPoints">—</b></span></div><div class="history-groups" id="historyRows" hidden><div class="history-muted">Select a coin and timeframe to view trade history.</div></div></section></div></div>
 <script>
 const API="https://api.india.delta.exchange";
 const markets=[
@@ -333,8 +333,17 @@ async function loadTradeHistory(){
  const refreshBtn=$("historyRefresh");
  if(refreshBtn){refreshBtn.disabled=true;refreshBtn.textContent="Loading…"}
  try{
-  const coinFilter=$("historySymbolFilter")?.value||"ALL";
-  const tfFilter=$("historyTimeframeFilter")?.value||"ALL";
+  const coinFilter=$("historySymbolFilter")?.value||"";
+  const tfFilter=$("historyTimeframeFilter")?.value||"";
+  const statsPanel=$("historyStats"),rowsPanel=$("historyRows");
+  if(!coinFilter||!tfFilter){
+   if(statsPanel)statsPanel.hidden=true;
+   if(rowsPanel)rowsPanel.hidden=true;
+   $("historyConnection").textContent="Select a coin and timeframe to view trade history";
+   return;
+  }
+  if(statsPanel)statsPanel.hidden=false;
+  if(rowsPanel)rowsPanel.hidden=false;
   const allRows=[];let offset=0,batchSize=1000;
   while(true){
    let url=SUPABASE_URL+"/rest/v1/trade_history_events?select=*&order=candle_time.desc,id.desc&limit="+batchSize+"&offset="+offset;
@@ -343,8 +352,8 @@ async function loadTradeHistory(){
    const batch=await r.json();allRows.push(...batch);if(batch.length<batchSize)break;offset+=batchSize;
   }
   const rows=allRows.filter(x=>
-   (coinFilter==="ALL"||String(x.symbol||"").trim().toUpperCase()===coinFilter.trim().toUpperCase())&&
-   (tfFilter==="ALL"||String(x.timeframe||"").trim().toLowerCase()===tfFilter.trim().toLowerCase())
+   String(x.symbol||"").trim().toUpperCase()===coinFilter.trim().toUpperCase()&&
+   String(x.timeframe||"").trim().toLowerCase()===tfFilter.trim().toLowerCase()
   );
   $("historyConnection").textContent="Connected · trade history ready";
   // Legacy counters are not present in the current premium Journal layout.
