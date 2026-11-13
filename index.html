@@ -315,6 +315,26 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .mi-wide{grid-column:1/-1}
 @media(max-width:680px){.mi-grid{grid-template-columns:1fr}.mi-hero{padding:16px}.mi-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mi-card{padding:13px}.mi-wide{grid-column:auto}}
 
+
+/* MAIN CHART PRO CONTROLS · isolated chart presentation */
+.chart-panel{min-width:0}
+.chart-controlbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:9px 13px;border-top:1px solid rgba(126,153,185,.12);border-bottom:1px solid rgba(126,153,185,.12);background:linear-gradient(90deg,rgba(8,18,31,.96),rgba(14,27,43,.92))}
+.chart-control-group{display:flex;align-items:center;gap:5px;padding-right:8px;border-right:1px solid rgba(126,153,185,.18)}
+.chart-control-group:last-child{border-right:0}
+.chart-controlbar button{min-width:34px;height:30px;padding:0 9px;border:1px solid rgba(126,153,185,.24);border-radius:8px;background:linear-gradient(180deg,#1a2b41,#101d2e);color:#c5d2e2;font:700 10px var(--font);cursor:pointer}
+.chart-controlbar button:hover,.chart-controlbar button.active{border-color:rgba(231,189,112,.7);color:#f0cb83;background:#2a251b}
+.chart-controlbar button:active{transform:scale(.96)}
+.chart-controlbar .chart-control-spacer{flex:1}
+.chart-controlbar .chart-minimize{color:#e7bd70}
+.chart-panel .chart-wrap{touch-action:pan-y}
+.chart-panel:fullscreen{width:100%;height:100%;max-width:none;background:#070b13;padding:16px;overflow:auto}
+.chart-panel:fullscreen .chart-wrap{height:calc(100vh - 150px);min-height:360px}
+.chart-panel:fullscreen .chart-controlbar{position:sticky;top:0;z-index:5}
+.chart-panel.chart-panel-minimized .chart-wrap,.chart-panel.chart-panel-minimized .chart-foot{display:none!important}
+.chart-panel.chart-panel-minimized .chart-controlbar{border-bottom:0}
+.chart-panel.chart-panel-minimized .chart-controlbar .chart-control-group:not(:last-child){display:none}
+@media(max-width:620px){.chart-controlbar{gap:5px;padding:8px;overflow-x:auto;flex-wrap:nowrap}.chart-control-group{flex:0 0 auto;padding-right:5px}.chart-controlbar button{min-width:32px;height:29px;padding:0 7px;font-size:9px}.chart-controlbar .chart-control-spacer{display:none}.chart-panel:fullscreen{padding:7px}.chart-panel:fullscreen .chart-wrap{height:calc(100vh - 135px);min-height:260px}}
+
 </style>
 </head>
 <body>
@@ -335,8 +355,15 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
  <div class="market-card"><div class="muted">Loading markets…</div></div>
 </section>
 <main class="workspace">
- <section class="panel">
+ <section class="panel chart-panel" id="mainChartPanel">
   <div class="panel-head"><div><div class="chart-meta"><span class="selected-name" id="chartSymbol">BTCUSD</span><span class="selected-price" id="chartPrice">—</span></div><div class="panel-caption">PRICE ACTION · DELTA EXCHANGE</div></div><div class="chart-tools" id="timeframes"><button class="tf" data-tf="1m">1m</button><button class="tf" data-tf="5m">5m</button><button class="tf" data-tf="15m">15m</button><button class="tf" data-tf="1h">1H</button><button class="tf active" data-tf="2h">2H</button><button class="tf" data-tf="4h">4H</button><button class="tf" data-tf="1d">1D</button></div></div>
+<div class="chart-controlbar" id="chartControlbar" aria-label="Chart controls">
+ <div class="chart-control-group"><button type="button" id="chartZoomIn" title="Zoom in" aria-label="Zoom in">＋</button><button type="button" id="chartZoomOut" title="Zoom out" aria-label="Zoom out">−</button></div>
+ <div class="chart-control-group"><button type="button" id="chartFit" title="Fit all candles">Fit</button><button type="button" id="chartLive" title="Scroll to latest candle">Live</button></div>
+ <div class="chart-control-group"><button type="button" id="chartAutoScale" title="Reset price scale">Auto</button><button type="button" id="chartCrosshair" title="Toggle crosshair mode" class="active">Crosshair</button></div>
+ <span class="chart-control-spacer"></span>
+ <div class="chart-control-group"><button type="button" id="chartFullscreen" title="Expand chart to full screen">⛶ Expand</button><button type="button" id="chartMinimize" class="chart-minimize" title="Minimize chart">− Minimize</button></div>
+</div>
   <div class="chart-wrap" id="chart"></div>
   <div class="chart-foot"><span>● Candlestick chart</span><span id="chartUpdated">Waiting for chart data</span><span>Prices in USD</span></div>
  </section>
@@ -670,6 +697,51 @@ function initChart(){
  candleSeries=chart.addCandlestickSeries({upColor:"#31d6a0",downColor:"#ff647c",borderUpColor:"#31d6a0",borderDownColor:"#ff647c",wickUpColor:"#31d6a0",wickDownColor:"#ff647c"});
  new ResizeObserver(()=>{if(chart)chart.applyOptions({width:el.clientWidth,height:el.clientHeight})}).observe(el);
 }
+
+ let chartCrosshairMagnet=false;
+ function chartVisibleZoom(factor){
+  if(!chart)return;
+  const ts=chart.timeScale(),r=ts.getVisibleLogicalRange();
+  if(!r){ts.fitContent();return}
+  const mid=(r.from+r.to)/2,span=Math.max(8,(r.to-r.from)*factor);
+  ts.setVisibleLogicalRange({from:mid-span/2,to:mid+span/2});
+ }
+ function setupMainChartControls(){
+  const panel=$("mainChartPanel");
+  $("chartZoomIn")?.addEventListener("click",()=>chartVisibleZoom(.72));
+  $("chartZoomOut")?.addEventListener("click",()=>chartVisibleZoom(1.38));
+  $("chartFit")?.addEventListener("click",()=>{if(chart){chart.timeScale().fitContent();chart.priceScale("right").applyOptions({autoScale:true})}});
+  $("chartLive")?.addEventListener("click",()=>{if(chart)chart.timeScale().scrollToRealTime()});
+  $("chartAutoScale")?.addEventListener("click",()=>{if(chart)chart.priceScale("right").applyOptions({autoScale:true})});
+  $("chartCrosshair")?.addEventListener("click",e=>{
+   chartCrosshairMagnet=!chartCrosshairMagnet;
+   if(chart)chart.applyOptions({crosshair:{mode:chartCrosshairMagnet?LightweightCharts.CrosshairMode.Magnet:LightweightCharts.CrosshairMode.Normal}});
+   e.currentTarget.classList.toggle("active",!chartCrosshairMagnet);
+   e.currentTarget.textContent=chartCrosshairMagnet?"Magnet":"Crosshair";
+  });
+  $("chartMinimize")?.addEventListener("click",()=>{
+   if(!panel)return;
+   const collapsed=panel.classList.toggle("chart-panel-minimized");
+   $("chartMinimize").textContent=collapsed?"＋ Restore":"− Minimize";
+   $("chartMinimize").title=collapsed?"Restore chart":"Minimize chart";
+   if(!collapsed&&chart)requestAnimationFrame(()=>chart.applyOptions({width:$("chart").clientWidth,height:$("chart").clientHeight}));
+  });
+  $("chartFullscreen")?.addEventListener("click",async()=>{
+   if(!panel)return;
+   try{
+    if(document.fullscreenElement===panel)await document.exitFullscreen();
+    else if(panel.requestFullscreen)await panel.requestFullscreen();
+    else throw Error("Fullscreen is not supported in this browser");
+   }catch(e){$("chartUpdated").textContent="Fullscreen unavailable · "+e.message}
+  });
+  document.addEventListener("fullscreenchange",()=>{
+   const active=document.fullscreenElement===panel;
+   $("chartFullscreen").textContent=active?"⤢ Exit":"⛶ Expand";
+   $("chartFullscreen").title=active?"Exit full screen":"Expand chart to full screen";
+   if(chart)requestAnimationFrame(()=>chart.applyOptions({width:$("chart").clientWidth,height:$("chart").clientHeight}));
+  });
+ }
+
 async function fetchAllTickers(){
  const r=await fetch(API+"/v2/tickers?contract_types=perpetual_futures",{cache:"no-store",headers:{Accept:"application/json"}});
  if(!r.ok)throw Error("Ticker API HTTP "+r.status);
@@ -1135,7 +1207,7 @@ async function scanAllMarketsAndTimeframes(){
 }
 
 async function start(){
- tickClock();setInterval(tickClock,1000);initChart();loadTradeHistory();setInterval(loadTradeHistory,300000);
+ tickClock();setInterval(tickClock,1000);initChart();setupMainChartControls();loadTradeHistory();setInterval(loadTradeHistory,300000);
  await Promise.allSettled([refreshTickers(),refreshChart()]);
  setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
 }
