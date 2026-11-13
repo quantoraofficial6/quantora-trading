@@ -917,7 +917,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
     if(cur.close>pos.sl){
      pushEvent("SELL","STOP LOSS HIT · SELL TRAILING SL",cur.close,cur.time,"Trailing stop hit on candle close; reversed to BUY");
      const lo=Math.min(pos.second.low,cur.low),hi=Math.max(pos.second.high,cur.high),stop=pos.first?.low??pos.second.low,risk=cur.close-stop;
-     pos=risk>0?{side:"BUY",entry:cur.close,sl:stop,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,first:pos.second,second:cur,entryTime:cur.time,targetHit:false}:null;
+     pos=risk>0?{side:"BUY",entry:cur.close,sl:stop,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,first:pos.first??pos.second,second:cur,entryTime:cur.time,targetHit:false}:null;
      if(pos)pushEvent("BUY","BUY ENTRY · SL REVERSAL",cur.close,cur.time,"New BUY position opened immediately after SELL trailing stop hit.");
      lastEvent="BUY";
      continue;
