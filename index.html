@@ -362,16 +362,38 @@ async function loadTradeHistory(){
   if($("historyEntries"))$("historyEntries").textContent=rows.filter(x=>x.event_type==="ENTRY").length;
   if($("historyTargets"))$("historyTargets").textContent=rows.filter(x=>x.event_type==="TARGET_HIT").length;
   if($("historyStops"))$("historyStops").textContent=rows.filter(x=>x.event_type==="STOP_LOSS_HIT").length;
-  const grouped=new Map();
-  rows.forEach(x=>{const k=x.trade_key||x.event_key;if(!grouped.has(k))grouped.set(k,[]);grouped.get(k).push(x)});
-  // Ignore legacy orphan ENTRY-only groups duplicated by another event on the same candle.
-  // This is journal reconciliation only; it does not alter strategy signals or positions.
-  const sameCandleUpdates=new Set(rows.filter(x=>x.event_type!=="ENTRY"&&x.candle_time).map(x=>[x.symbol,x.timeframe,x.side,new Date(x.candle_time).getTime()].join("|")));
-  const trades=[...grouped.entries()].filter(([key,events])=>{
-   if(events.length!==1||events[0].event_type!=="ENTRY")return true;
-   const e=events[0],stamp=e.candle_time?new Date(e.candle_time).getTime():NaN;
-   return !sameCandleUpdates.has([e.symbol,e.timeframe,e.side,stamp].join("|"));
-  }).sort((a,b)=>{
+  // Rebuild journal trades from the chronological event stream instead of trusting legacy trade_key groups.
+  // Repeated scans can leave duplicate ENTRY rows under different keys; one strategy can only hold one position per market/timeframe.
+  const streams=new Map();
+  rows.forEach(e=>{
+   const streamKey=[e.strategy,e.symbol,e.timeframe].join("|");
+   if(!streams.has(streamKey))streams.set(streamKey,[]);
+   streams.get(streamKey).push(e);
+  });
+  const trades=[];
+  for(const [streamKey,streamEvents] of streams){
+   const priority=e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED"?0:e.event_type==="ENTRY"?1:2;
+   streamEvents.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at)||priority(a)-priority(b)||Number(a.id||0)-Number(b.id||0));
+   let activeTrade=null;
+   for(const e of streamEvents){
+    if(e.event_type==="ENTRY"){
+     if(!activeTrade)activeTrade={key:e.trade_key||e.event_key,side:e.side,events:[e]};
+     // Ignore overlapping duplicate entries from another historical scan until the open trade closes.
+     continue;
+    }
+    if(e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED"){
+     if(activeTrade&&activeTrade.side===e.side){
+      activeTrade.events.push(e);
+      trades.push([activeTrade.key,activeTrade.events]);
+      activeTrade=null;
+     }
+     continue;
+    }
+    if(activeTrade&&activeTrade.side===e.side)activeTrade.events.push(e);
+   }
+   if(activeTrade)trades.push([activeTrade.key,activeTrade.events]);
+  }
+  trades.sort((a,b)=>{
    const terminal=events=>events.some(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
    const activeA=!terminal(a[1]),activeB=!terminal(b[1]);
    if(activeA!==activeB)return activeA?-1:1;
