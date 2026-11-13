@@ -225,7 +225,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 <nav class="q-feature-nav" id="quantoraFeatureNav" aria-label="Quantora pages">
  <button class="q-nav active" data-page="terminal">⌂ Terminal</button><button class="q-nav" data-page="performance">▥ Performance</button><button class="q-nav" data-page="calendar">▦ Calendar</button><button class="q-nav" data-page="risk">◇ Risk Calculator</button><button class="q-nav" data-page="compare">⇄ Strategy Compare</button><button class="q-nav" data-page="sessions">◷ Sessions</button><button class="q-nav" data-page="alerts">♢ Alerts</button><button class="q-nav" data-page="equity">⌁ Equity Curve</button><button class="q-nav" data-page="review">▤ Trade Review</button>
 </nav>
-<section class="strategy-switch" aria-label="Strategy selector">
+<section class="strategy-switch" id="strategySwitch" aria-label="Strategy selector">
  <button class="strategy-tab active" id="classicTab" type="button">Dynamic Range Pro</button>
  <button class="strategy-tab" id="liquidityTab" type="button">Liquidity Sweep <span>15M</span></button>
 </section>
@@ -964,8 +964,8 @@ function showStrategy(which){
   });
  }
 }
-$("classicTab").addEventListener("click",()=>showStrategy("classic"));
-$("liquidityTab").addEventListener("click",()=>showStrategy("liquidity"));
+$("classicTab").addEventListener("click",()=>{qShowPage("terminal");showStrategy("classic")});
+$("liquidityTab").addEventListener("click",()=>{qShowPage("terminal");showStrategy("liquidity")});
  $("liqUtcMode").addEventListener("click",()=>setLiquidityDayMode("UTC"));
  $("liqIstMode").addEventListener("click",()=>setLiquidityDayMode("IST"));
 
@@ -1092,12 +1092,20 @@ function qRenderAlerts(){
 }
 function qRenderAll(){qRenderPerformance();qRenderCompare();qRenderSessions();qRenderCalendar();qRenderRisk();qRenderEquity();qRenderReview();qRenderAlerts()}
 async function qLoadAnalytics(silent=false){
- try{$("qDataStatus").textContent="Loading saved trades…";const rows=await qFetchEvents();qState.events=rows;qState.trades=qBuildTrades(rows);qState.loaded=true;$("qDataStatus").textContent="Connected · "+rows.length+" events · "+qState.trades.length+" trades";qRenderAll()}
+ try{$("qDataStatus").textContent="Loading saved trades…";const rows=await qFetchEvents();
+  if(qState.loaded&&"Notification" in window&&Notification.permission==="granted"){
+   const fresh=rows.filter(e=>!qState.alertSeen.has(e.event_key||String(e.id))&&["ENTRY","TARGET_HIT","STOP_LOSS_HIT","TRADE_CLOSED"].includes(e.event_type));
+   fresh.slice(-5).forEach(e=>{try{new Notification("QUANTORA · "+e.event_type,{body:e.strategy+" · "+e.symbol+" "+e.side+" · "+(e.price??"")})}catch(_){}});
+  }
+  rows.forEach(e=>qState.alertSeen.add(e.event_key||String(e.id)));
+  qState.events=rows;qState.trades=qBuildTrades(rows);qState.loaded=true;$("qDataStatus").textContent="Connected · "+rows.length+" events · "+qState.trades.length+" trades";qRenderAll()}
  catch(e){$("qDataStatus").textContent="Database error · "+e.message;console.error("Quantora analytics:",e);if(!silent)alert("Could not load analytics: "+e.message)}
 }
 function qShowPage(page){
  qState.page=page;const terminal=page==="terminal";
- $("classicView").hidden=!terminal;$("liquidityView").hidden=!terminal;$("qFeaturePages").hidden=terminal;
+ $("qFeaturePages").hidden=terminal;$("strategySwitch")?.toggleAttribute("hidden",!terminal);
+ if(terminal){const liq=$("liquidityTab").classList.contains("active");$("classicView").hidden=liq;$("liquidityView").hidden=!liq;if(liq)showStrategy("liquidity")}
+ else{$("classicView").hidden=true;$("liquidityView").hidden=true}
  document.querySelectorAll(".q-nav").forEach(b=>b.classList.toggle("active",b.dataset.page===page));
  document.querySelectorAll(".q-page").forEach(el=>el.hidden=el.id!=="qPage-"+page);
  const titles={performance:["Performance Analytics","Win rate, profit factor and closed-trade statistics."],calendar:["Trading Calendar","Daily and monthly results from your saved trade history."],risk:["Risk Calculator","Estimate position size from your capital and stop distance."],compare:["Strategy Comparison","Compare both strategy engines using recorded trades."],sessions:["Session Analysis","Compare entry performance across major market sessions."],alerts:["Alerts Center","Review saved strategy events and enable browser notifications."],equity:["Equity Curve","Visualize cumulative results using your chosen point value."],review:["Trade Review","Inspect individual trade timelines and keep private review notes."]};
