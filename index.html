@@ -364,7 +364,14 @@ async function loadTradeHistory(){
   if($("historyStops"))$("historyStops").textContent=rows.filter(x=>x.event_type==="STOP_LOSS_HIT").length;
   const grouped=new Map();
   rows.forEach(x=>{const k=x.trade_key||x.event_key;if(!grouped.has(k))grouped.set(k,[]);grouped.get(k).push(x)});
-  const trades=[...grouped.entries()].sort((a,b)=>{
+  // Ignore legacy orphan ENTRY-only groups duplicated by another event on the same candle.
+  // This is journal reconciliation only; it does not alter strategy signals or positions.
+  const sameCandleUpdates=new Set(rows.filter(x=>x.event_type!=="ENTRY"&&x.candle_time).map(x=>[x.symbol,x.timeframe,x.side,new Date(x.candle_time).getTime()].join("|")));
+  const trades=[...grouped.entries()].filter(([key,events])=>{
+   if(events.length!==1||events[0].event_type!=="ENTRY")return true;
+   const e=events[0],stamp=e.candle_time?new Date(e.candle_time).getTime():NaN;
+   return !sameCandleUpdates.has([e.symbol,e.timeframe,e.side,stamp].join("|"));
+  }).sort((a,b)=>{
    const terminal=events=>events.some(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
    const activeA=!terminal(a[1]),activeB=!terminal(b[1]);
    if(activeA!==activeB)return activeA?-1:1;
@@ -581,8 +588,8 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")||kind.includes("TRAILING SL HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time;
   const tradeKey=["DRP",scanSymbol,scanTimeframe,activeEntryTime].join(":");
-  const eventKey=["DRP",scanSymbol,scanTimeframe,eventType,time,Number(price).toFixed(6)].join(":");
-  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
+  const eventKey=["DRP",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
+  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
 
  };
  for(let i=1;i<candles.length;i++){
