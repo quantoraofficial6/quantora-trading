@@ -693,7 +693,7 @@ function setConnection(s,error=false){$("connection").textContent=s;$("connectio
 function initChart(){
  const el=$("chart");
  if(!window.LightweightCharts){el.innerHTML='<div class="chart-placeholder">Chart library could not be loaded. Check your internet connection.</div>';return}
- chart=LightweightCharts.createChart(el,{width:el.clientWidth,height:el.clientHeight,layout:{background:{type:"solid",color:"#0d1522"},textColor:"#8192a9",fontFamily:"DM Mono, monospace"},grid:{vertLines:{color:"#172437"},horzLines:{color:"#172437"}},rightPriceScale:{borderColor:"#26364b"},timeScale:{borderColor:"#26364b",timeVisible:true,secondsVisible:false},crosshair:{mode:LightweightCharts.CrosshairMode.Normal}});
+ chart=LightweightCharts.createChart(el,{width:el.clientWidth,height:el.clientHeight,layout:{background:{type:"solid",color:"#0d1522"},textColor:"#8192a9",fontFamily:"DM Mono, monospace"},grid:{vertLines:{color:"#172437"},horzLines:{color:"#172437"}},rightPriceScale:{borderColor:"#26364b"},timeScale:{borderColor:"#26364b",timeVisible:true,secondsVisible:false},handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true,axisDoubleClickReset:true},crosshair:{mode:LightweightCharts.CrosshairMode.Normal}});
  candleSeries=chart.addCandlestickSeries({upColor:"#31d6a0",downColor:"#ff647c",borderUpColor:"#31d6a0",borderDownColor:"#ff647c",wickUpColor:"#31d6a0",wickDownColor:"#ff647c"});
  new ResizeObserver(()=>{if(chart)chart.applyOptions({width:el.clientWidth,height:el.clientHeight})}).observe(el);
 }
