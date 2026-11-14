@@ -766,6 +766,40 @@ $("tradeJournalOpen")?.addEventListener("click",()=>{$("tradeJournalModal").hidd
 $("tradeJournalClose")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=true;document.body.style.overflow=""});
 $("tradeJournalModal")?.addEventListener("click",e=>{if(e.target===$("tradeJournalModal")){$("tradeJournalModal").hidden=true;document.body.style.overflow=""}});
 
+// Keep the current view and position when the user refreshes this page.
+const QUANTORA_VIEW_STATE_KEY="quantora_view_state_v1";
+function saveQuantoraViewState(){
+ try{
+  sessionStorage.setItem(QUANTORA_VIEW_STATE_KEY,JSON.stringify({
+   strategy:$("liquidityView")?.hidden===false?"liquidity":"classic",
+   analyticsOpen:$("tradeJournalModal")?.hidden===false,
+   scrollY:window.scrollY||window.pageYOffset||0,
+   historySymbol:$("historySymbolFilter")?.value||"",
+   historyTimeframe:$("historyTimeframeFilter")?.value||"",
+   liqDayMode:liqDayMode,
+   liqSelected:liqSelected
+  }));
+ }catch(_){}
+}
+function restoreQuantoraViewState(){
+ let state;
+ try{state=JSON.parse(sessionStorage.getItem(QUANTORA_VIEW_STATE_KEY)||"null")}catch(_){}
+ if(!state)return;
+ if(state.strategy==="liquidity")showStrategy("liquidity");
+ if(state.liqDayMode&&state.liqDayMode!==liqDayMode)setLiquidityDayMode(state.liqDayMode);
+ if(state.liqSelected&&markets.some(m=>m.symbol===state.liqSelected))liqSelected=state.liqSelected;
+ if(state.analyticsOpen){
+  $("tradeJournalModal").hidden=false;
+  document.body.style.overflow="hidden";
+  if(state.historySymbol)$("historySymbolFilter").value=state.historySymbol;
+  if(state.historyTimeframe)$("historyTimeframeFilter").value=state.historyTimeframe;
+  if(state.historySymbol&&state.historyTimeframe)loadTradeHistory();
+ }
+ requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,Math.max(0,Number(state.scrollY)||0))));
+}
+window.addEventListener("beforeunload",saveQuantoraViewState);
+window.addEventListener("pagehide",saveQuantoraViewState);
+restoreQuantoraViewState();
 
 function setConnection(s,error=false){$("connection").textContent=s;$("connection").style.color=error?"#ff647c":"#8292a9"}
 function initChart(){
