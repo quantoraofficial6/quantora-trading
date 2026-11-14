@@ -646,6 +646,11 @@ async function loadTradeHistory(){
      }
      continue;
     }
+    if(e.event_type==="TRADE_EXTREMES"){
+     const closedTrade=[...trades].reverse().find(([key])=>key===(e.trade_key||e.event_key));
+     if(closedTrade)closedTrade[1].push(e);
+     continue;
+    }
     if(activeTrade&&activeTrade.side===e.side&&(e.trade_key||e.event_key)===activeTrade.key)activeTrade.events.push(e);
    }
    if(activeTrade)trades.push([activeTrade.key,activeTrade.events]);
@@ -697,7 +702,7 @@ async function loadTradeHistory(){
    const pct=points!=null&&entry>0?points/entry*100:null;
    const resultClass=pnl==null?"":pnl>=0?"positive":"negative";
    const fmtSigned=v=>(v>0?"+":"")+fmt(v);
-   const eventCards=events.map(e=>{
+   const eventCards=events.filter(e=>e.event_type!=="TRADE_EXTREMES").map(e=>{
     let label=e.event_type==="ENTRY"?"ENTRY / TRADE OPENED":e.event_type==="RANGE_UPDATE"?"RANGE BREAK · STOP TRAILED":e.event_type==="TARGET_HIT"?"TARGET REACHED · TRADE CONTINUES":e.event_type==="STOP_LOSS_HIT"?"STOP LOSS HIT":e.event_type==="TRADE_CLOSED"?"TRADE CLOSED":e.event_type==="SETUP_CANCELLED"?"SETUP CANCELLED":e.event_type==="SIGNAL_BLOCKED"?"SIGNAL FILTERED":"TRADE UPDATE";
     const candle=e.candle_time||e.occurred_at,localTime=formatJournalTime(candle,false);
     const priceLabel=e.event_type==="TARGET_HIT"?"Target level touched":e.event_type==="STOP_LOSS_HIT"?"SL-trigger candle close / recorded exit":e.event_type==="RANGE_UPDATE"?"Breakout candle close":e.event_type==="ENTRY"?"Signal candle close":"Recorded market price";
@@ -720,7 +725,9 @@ async function loadTradeHistory(){
    const liveTradePct=livePoints==null||entry<=0?null:livePoints/entry*100;
    const displayPoints=isClosed?points:livePoints,displayPct=isClosed?pct:liveTradePct,displayPrice=isClosed?exit:live;
    const liveLine='<div class="journal-live-price" data-live-symbol="'+entryEvent.symbol+'" data-entry="'+(entry??"")+'" data-side="'+entryEvent.side+'" data-closed="'+(isClosed?"true":"false")+'">'+(isClosed?"EXIT PRICE · ":"LIVE PRICE · ")+(Number.isFinite(displayPrice)?fmt(displayPrice):"—")+' <span data-live-percent class="'+(displayPct==null?"":displayPct>=0?"positive":"negative")+'">'+(displayPct==null?"":(displayPct>0?"+":"")+displayPct.toFixed(2)+"%")+'</span><span data-live-points class="'+(displayPoints==null?"":displayPoints>=0?"positive":"negative")+'">'+(displayPoints==null?"":fmtSigned(displayPoints)+" pts")+'</span></div>';
-   const excursion= isClosed&&stopEvent?.metadata&&Number.isFinite(Number(stopEvent.metadata.max_favorable_points))&&Number.isFinite(Number(stopEvent.metadata.max_adverse_points))?'<div class="history-muted" style="margin-top:5px;font-size:12px">TRADE HIGH <b class="positive">'+fmtSigned(Number(stopEvent.metadata.max_favorable_points))+' pts</b> · TRADE LOW <b class="negative">'+fmtSigned(Number(stopEvent.metadata.max_adverse_points))+' pts</b></div>':"";
+   const extremeEvent=events.find(e=>e.event_type==="TRADE_EXTREMES");
+   const extremeMeta=extremeEvent?.metadata||stopEvent?.metadata;
+   const excursion=isClosed&&extremeMeta&&Number.isFinite(Number(extremeMeta.max_favorable_points))&&Number.isFinite(Number(extremeMeta.max_adverse_points))?'<div class="history-muted" style="margin-top:5px;font-size:12px">HIGH <b class="positive">'+fmtSigned(Number(extremeMeta.max_favorable_points))+' pts</b> · LOW <b class="negative">'+fmtSigned(Number(extremeMeta.max_adverse_points))+' pts</b></div>':"";
    return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div>'+liveLine+excursion+'</div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
   }).join(""):'<div class="history-muted">No trades match these filters.</div>';
  }catch(e){const message=e&&e.message?e.message:"Unknown database error";$("historyConnection").textContent="Database unavailable · "+message;$("historyRows").innerHTML='<div class="history-muted">Could not load history. '+message+'</div>';console.error("Trade history load:",e)}
@@ -944,8 +951,15 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   const tradeKey=["DRP3",scanSymbol,scanTimeframe,activeEntryTime].join(":");
   const eventKey=["DRP3",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
   const metadata={event_label:kind};
-  if(eventType==="STOP_LOSS_HIT"&&pos){metadata.max_favorable_points=Number(pos.maxFavorablePoints||0);metadata.max_adverse_points=Number(pos.maxAdversePoints||0);}
+  if(eventType==="STOP_LOSS_HIT"&&pos){
+   metadata.max_favorable_points=Number(pos.maxFavorablePoints||0);
+   metadata.max_adverse_points=Number(pos.maxAdversePoints||0);
+  }
   saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata});
+  if(eventType==="STOP_LOSS_HIT"&&pos){
+   const extremesKey=eventKey+":EXTREMES";
+   saveTradeEvent({event_key:extremesKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:"TRADE_EXTREMES",status:"CLOSED",price,entry_price:pos.entry,exit_price:price,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:"Maximum favorable and adverse movement during the closed trade.",metadata:{max_favorable_points:Number(pos.maxFavorablePoints||0),max_adverse_points:Number(pos.maxAdversePoints||0)}});
+  }
  };
  const makePosition=(side,first,second,entry,time,stop)=>{
   const rangeHigh=Math.max(first.high,second.high),rangeLow=Math.min(first.low,second.low);
