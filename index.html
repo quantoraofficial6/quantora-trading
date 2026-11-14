@@ -738,6 +738,8 @@ async function loadTradeHistory(){
    const excursion=isClosed&&favorablePts!=null&&adversePts!=null?'<div class="history-muted" style="margin-top:5px;font-size:12px">HIGH <b class="positive">'+fmtSigned(favorablePts)+' pts</b> · LOW <b class="negative">'+fmtSigned(adversePts)+' pts</b></div>':"";
    return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div>'+liveLine+excursion+'</div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
   }).join(""):'<div class="history-muted">No trades match these filters.</div>';
+  // Apply the latest available ticker snapshot after trade cards are inserted.
+  updateJournalLivePrices();
  }catch(e){const message=e&&e.message?e.message:"Unknown database error";$("historyConnection").textContent="Database unavailable · "+message;$("historyRows").innerHTML='<div class="history-muted">Could not load history. '+message+'</div>';console.error("Trade history load:",e)}
  finally{if(refreshBtn){refreshBtn.disabled=false;refreshBtn.textContent="↻ Refresh"}}
 }
