@@ -525,22 +525,39 @@ const $=id=>document.getElementById(id);
 const fmt=n=>Number.isFinite(Number(n))?Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:4}):"—";
 const tfSeconds={"1m":60,"5m":300,"15m":900,"1h":3600,"2h":7200,"4h":14400,"1d":86400};
 const SUPABASE_URL="https://wxbclrvvqcfpanmuohlt.supabase.co",SUPABASE_KEY="sb_publishable_3BeMVDBkC0m6ls2BsGSSIA_m-iOQV_r";
-const tradeLogSeen=new Set();
-async function fetchWithTimeout(url,options={},timeoutMs=12000){
- const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),timeoutMs);
+const tradeLogSeen=new Set(),tradeEventQueue=new Map();
+let tradeEventFlushBusy=false,tradeEventFlushTimer=null;
+async function fetchWithTimeout(url,options={},timeoutMs=15000){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
  try{return await fetch(url,{...options,signal:controller.signal})}
  catch(e){if(e&&e.name==="AbortError")throw Error("Request timed out after "+Math.round(timeoutMs/1000)+" seconds");throw e}
  finally{clearTimeout(timer)}
 }
-async function saveTradeEvent(ev){
- if(!ev||!ev.event_key||tradeLogSeen.has(ev.event_key))return;
- tradeLogSeen.add(ev.event_key);
+function scheduleTradeEventFlush(delay=300){
+ if(tradeEventFlushTimer)return;
+ tradeEventFlushTimer=setTimeout(()=>{tradeEventFlushTimer=null;flushTradeEventQueue()},delay);
+}
+async function flushTradeEventQueue(){
+ if(tradeEventFlushBusy||!tradeEventQueue.size)return;
+ tradeEventFlushBusy=true;
+ const batch=[...tradeEventQueue.values()].slice(0,100);
+ batch.forEach(e=>tradeEventQueue.delete(e.event_key));
  try{
-  const r=await fetchWithTimeout(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(ev)},12000);
-  if(!r.ok){tradeLogSeen.delete(ev.event_key);throw Error("DB write "+r.status+" "+(await r.text()).slice(0,180))}
-
- }catch(e){tradeLogSeen.delete(ev.event_key);$("historyConnection").textContent="Database save error · "+e.message;console.error("Trade history save:",e)}
+  const r=await fetchWithTimeout(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(batch)},20000);
+  if(!r.ok)throw Error("DB batch write "+r.status+" "+(await r.text()).slice(0,180));
+ }catch(e){
+  batch.forEach(ev=>{if(!tradeEventQueue.has(ev.event_key))tradeEventQueue.set(ev.event_key,ev)});
+  $("historyConnection").textContent="Database save error · "+e.message;
+  console.error("Trade history batch save:",e);
+ }finally{
+  tradeEventFlushBusy=false;
+  if(tradeEventQueue.size)scheduleTradeEventFlush(2500);
+ }
+}
+function saveTradeEvent(ev){
+ if(!ev||!ev.event_key||tradeLogSeen.has(ev.event_key))return;
+ tradeLogSeen.add(ev.event_key);tradeEventQueue.set(ev.event_key,ev);
+ if(tradeEventQueue.size>=100)scheduleTradeEventFlush(0);else scheduleTradeEventFlush();
 }
 function getJournalQuantities(){
  try{return JSON.parse(localStorage.getItem("quantora_journal_quantities")||"{}")}catch(_){return {}}
@@ -581,14 +598,16 @@ async function loadTradeHistory(){
   if(statsPanel)statsPanel.hidden=false;
   if(rowsPanel)rowsPanel.hidden=false;
   const allRows=[];let offset=0,batchSize=1000;
+  const historyCutoff=new Date(Date.now()-30*24*60*60*1000).toISOString();
   while(true){
-   let url=SUPABASE_URL+"/rest/v1/trade_history_events?select=*&order=candle_time.desc,id.desc&limit="+batchSize+"&offset="+offset;
+   let url=SUPABASE_URL+"/rest/v1/trade_history_events?select=*&candle_time=gte."+encodeURIComponent(historyCutoff)+"&order=candle_time.desc,id.desc&limit="+batchSize+"&offset="+offset;
    const r=await fetchWithTimeout(url,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Prefer:"count=none"}},15000);
    if(!r.ok)throw Error("History load "+r.status+" "+(await r.text()).slice(0,160));
    const batch=await r.json();allRows.push(...batch);if(batch.length<batchSize)break;offset+=batchSize;
   }
   const rows=allRows.filter(x=>
-   String(x.event_key||"").startsWith("DRP2:")&&
+   String(x.event_key||"").startsWith("DRP3:")&&
+   new Date(x.candle_time||x.occurred_at).getTime()>=Date.now()-30*24*60*60*1000&&
    String(x.symbol||"").trim().toUpperCase()===coinFilter.trim().toUpperCase()&&
    String(x.timeframe||"").trim().toLowerCase()===tfFilter.trim().toLowerCase()
   );
@@ -908,6 +927,8 @@ let strategyPriceLines=[];
 function clearStrategyLines(){strategyPriceLines.forEach(x=>{try{candleSeries.removePriceLine(x)}catch(_){}});strategyPriceLines=[]}
 function addStrategyLine(p,color,label,style=2){const x=priceLine(p,color,label,style);if(x)strategyPriceLines.push(x)}
 function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=timeframe){
+ const historyCutoff=Math.floor(Date.now()/1000)-30*24*60*60;
+ candles=candles.filter(c=>c&&Number.isFinite(c.time)&&c.time>=historyCutoff);
  const history=[];
  let pos=null,lastEvent=null;
  const pushEvent=(side,kind,price,time,detail)=>{
@@ -915,8 +936,8 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   if(history.length>8)history.pop();
   const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")||kind.includes("TRAILING SL HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time;
-  const tradeKey=["DRP2",scanSymbol,scanTimeframe,activeEntryTime].join(":");
-  const eventKey=["DRP2",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
+  const tradeKey=["DRP3",scanSymbol,scanTimeframe,activeEntryTime].join(":");
+  const eventKey=["DRP3",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
   saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
  };
  const makePosition=(side,first,second,entry,time,stop)=>{
