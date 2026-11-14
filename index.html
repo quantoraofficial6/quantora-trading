@@ -45,7 +45,8 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 .signal-panel{display:flex;flex-direction:column}.signal-main{padding:20px 18px 16px}.signal-label{font-size:10px;letter-spacing:1.6px;color:var(--muted);font-weight:800}.signal-state{display:flex;align-items:center;gap:10px;margin:13px 0 7px}.signal-state strong{font-size:27px;letter-spacing:1px;color:var(--gold)}.signal-dot{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 5px #e7bd7018}.signal-desc{font-size:11px;line-height:1.6;color:var(--muted);min-height:35px}
 .signal-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 18px 18px}.signal-level{background:#121e2e;border:1px solid #203047;border-radius:10px;padding:12px}.signal-level span{display:block;color:var(--muted);font-size:9px;letter-spacing:1px}.signal-level b{display:block;font:13px var(--mono);margin-top:7px}
 .strategy-note{margin:0 18px 18px;padding:12px;border:1px dashed #59482d;border-radius:10px;background:#1c1913;color:#c8b28b;font-size:10px;line-height:1.55}.strategy-note b{color:var(--gold)}
-.lower-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}.levels-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:15px}.metric{background:#111c2b;border:1px solid #1e2d42;border-radius:10px;padding:13px}.metric span{display:block;color:var(--muted);font-size:9px;letter-spacing:.8px}.metric b{display:block;font:14px var(--mono);margin-top:8px}.feed{padding:4px 17px 14px}.feed-empty{padding:20px 0;text-align:center;color:var(--muted);font-size:11px}.feed-item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #1b293b;font-size:10px}.feed-item:last-child{border:0}.feed-item small{color:var(--muted);display:block;margin-top:4px}.feed-side{font-weight:800}.muted{color:var(--muted)}
+.lower-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}.levels-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:15px}.metric{background:#111c2b;border:1px solid #1e2d42;border-radius:10px;padding:13px}.metric span{display:block;color:var(--muted);font-size:9px;letter-spacing:.8px}.metric b{display:block;font:14px var(--mono);margin-top:8px}.feed{padding:4px 17px 14px}.feed-empty{padding:20px 0;text-align:center;color:var(--muted);font-size:11px}.feed-item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #1b293b;font-size:10px}.feed-item:last-child{border:0}.feed-item small{color:var(--muted);display:block;margin-top:4px}.feed-points{display:block;margin-top:5px;font:700 11px "DM Mono",monospace;white-space:nowrap}.feed-points.positive{color:#31d6a0}.feed-points.negative{color:#ff647c}
+.feed-side{font-weight:800}.muted{color:var(--muted)}
 .footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#62728a;font-size:9px;padding:20px 2px 0}
 @media(max-width:950px){.workspace{grid-template-columns:1fr}.signal-panel{min-height:0}.market-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.lower-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.app{padding:13px 12px 24px}.topbar{padding-bottom:15px}.brand-name{font-size:18px}.brand-mark{width:35px;height:35px}.clock{display:none}.welcome{margin:20px 0 14px}.welcome h1{font-size:21px}.market-strip{gap:8px}.market-card{padding:12px}.coin-price{font-size:16px}.panel-head{padding:14px}.chart-wrap{height:315px;padding:7px 4px 0}.chart-tools{width:100%}.chart-tools .tf{flex:1}.levels-row{grid-template-columns:repeat(2,1fr);padding:12px}.signal-main{padding:17px 15px}.signal-grid{padding:0 15px 15px}.strategy-note{margin:0 15px 15px}}
@@ -939,7 +940,9 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
  const history=[];
  let pos=null,lastEvent=null;
  const pushEvent=(side,kind,price,time,detail)=>{
-  history.unshift({side,kind,price,time,detail});
+  const eventEntry=pos?.entry??price;
+  const eventPoints=side==="SELL"?eventEntry-price:price-eventEntry;
+  history.unshift({side,kind,price,time,detail,entryPrice:eventEntry,points:eventPoints});
   if(history.length>8)history.pop();
   const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")||kind.includes("TRAILING SL HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time;
@@ -1033,7 +1036,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
    $("signalReason").textContent="Waiting for a candle to close beyond the previous candle's high or low.";
    $("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";
   }
-  $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'</div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
+  $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'<small class="feed-points '+(e.points>=0?"positive":"negative")+'">'+fmtSigned(e.points)+' pts</small></div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
  }
 }
 function updateStructure(c){
