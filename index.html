@@ -4,25 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#070b13">
-<title>Quantora | Live Crypto Trading Terminal, BTC &amp; ETH Charts, Gold Market Signals</title>
-<meta name="description" content="Explore Quantora, a live crypto and gold market terminal with BTC, ETH, SOL, XRP and XAUT charts, multiple timeframes, market structure and rule-based trading signals. For research and education only.">
-<meta name="robots" content="index,follow,max-image-preview:large">
-<link rel="canonical" href="https://quantoraofficial6.github.io/quantora-trading/">
-<meta name="author" content="Quantora">
-<meta name="application-name" content="Quantora">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Quantora">
-<meta property="og:title" content="Quantora | Live Crypto Trading Terminal">
-<meta property="og:description" content="Live BTC, ETH, SOL, XRP and gold market charts, multi-timeframe analysis and rule-based trading signals.">
-<meta property="og:url" content="https://quantoraofficial6.github.io/quantora-trading/">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Quantora | Live Crypto Trading Terminal">
-<meta name="twitter:description" content="Live crypto and gold charts, market structure and rule-based trading signals.">
+<title>QUANTORA — Crypto Trading Terminal</title>
+<meta name="description" content="QUANTORA premium crypto market terminal with live prices, interactive charts and strategy-based trading signals.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js">
-</script>
+<script src="https://unpkg.com/lightweight-charts@4.2.2/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 :root{--bg:#070b13;--panel:#0d1421;--panel2:#111b2b;--line:#1c2a3d;--text:#edf3fc;--muted:#8292a9;--gold:#e7bd70;--gold2:#b98a3f;--green:#31d6a0;--red:#ff647c;--blue:#6fa9ff;--mono:"DM Mono",monospace;--font:"Manrope",sans-serif}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#17263d 0,#070b13 55%);color:var(--text);font-family:var(--font);min-height:100vh}
@@ -45,8 +32,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 .signal-panel{display:flex;flex-direction:column}.signal-main{padding:20px 18px 16px}.signal-label{font-size:10px;letter-spacing:1.6px;color:var(--muted);font-weight:800}.signal-state{display:flex;align-items:center;gap:10px;margin:13px 0 7px}.signal-state strong{font-size:27px;letter-spacing:1px;color:var(--gold)}.signal-dot{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 5px #e7bd7018}.signal-desc{font-size:11px;line-height:1.6;color:var(--muted);min-height:35px}
 .signal-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 18px 18px}.signal-level{background:#121e2e;border:1px solid #203047;border-radius:10px;padding:12px}.signal-level span{display:block;color:var(--muted);font-size:9px;letter-spacing:1px}.signal-level b{display:block;font:13px var(--mono);margin-top:7px}
 .strategy-note{margin:0 18px 18px;padding:12px;border:1px dashed #59482d;border-radius:10px;background:#1c1913;color:#c8b28b;font-size:10px;line-height:1.55}.strategy-note b{color:var(--gold)}
-.lower-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}.levels-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:15px}.metric{background:#111c2b;border:1px solid #1e2d42;border-radius:10px;padding:13px}.metric span{display:block;color:var(--muted);font-size:9px;letter-spacing:.8px}.metric b{display:block;font:14px var(--mono);margin-top:8px}.feed{padding:4px 17px 14px}.feed-empty{padding:20px 0;text-align:center;color:var(--muted);font-size:11px}.feed-item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #1b293b;font-size:10px}.feed-item:last-child{border:0}.feed-item small{color:var(--muted);display:block;margin-top:4px}.feed-points{display:block;margin-top:5px;font:700 11px "DM Mono",monospace;white-space:nowrap}.feed-points.positive{color:#31d6a0}.feed-points.negative{color:#ff647c}
-.feed-side{font-weight:800}.muted{color:var(--muted)}
+.lower-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}.levels-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:15px}.metric{background:#111c2b;border:1px solid #1e2d42;border-radius:10px;padding:13px}.metric span{display:block;color:var(--muted);font-size:9px;letter-spacing:.8px}.metric b{display:block;font:14px var(--mono);margin-top:8px}.feed{padding:4px 17px 14px}.feed-empty{padding:20px 0;text-align:center;color:var(--muted);font-size:11px}.feed-item{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid #1b293b;font-size:10px}.feed-item:last-child{border:0}.feed-item small{color:var(--muted);display:block;margin-top:4px}.feed-side{font-weight:800}.muted{color:var(--muted)}
 .footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:#62728a;font-size:9px;padding:20px 2px 0}
 @media(max-width:950px){.workspace{grid-template-columns:1fr}.signal-panel{min-height:0}.market-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.lower-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.app{padding:13px 12px 24px}.topbar{padding-bottom:15px}.brand-name{font-size:18px}.brand-mark{width:35px;height:35px}.clock{display:none}.welcome{margin:20px 0 14px}.welcome h1{font-size:21px}.market-strip{gap:8px}.market-card{padding:12px}.coin-price{font-size:16px}.panel-head{padding:14px}.chart-wrap{height:315px;padding:7px 4px 0}.chart-tools{width:100%}.chart-tools .tf{flex:1}.levels-row{grid-template-columns:repeat(2,1fr);padding:12px}.signal-main{padding:17px 15px}.signal-grid{padding:0 15px 15px}.strategy-note{margin:0 15px 15px}}
@@ -75,7 +61,7 @@ button,select{font:inherit}button{cursor:pointer}.app{max-width:1600px;margin:au
 .journal-qty-input{width:100%;min-width:0;background:#142338;color:#f1f5f9;border:1px solid #52627a;border-radius:7px;padding:9px 7px;font:13px "DM Mono",monospace}
 .journal-qty-input:focus{outline:1px solid #e7bd70;border-color:#e7bd70}
 .journal-result b{display:block;font:700 13px "DM Mono",monospace;overflow-wrap:anywhere}
-.journal-calc-note{margin:4px 0 12px;font-size:10px;line-height:1.5}.journal-live-price{margin-top:7px;color:#9aabc0;font:11px "DM Mono",monospace}.journal-live-price span{margin-left:7px;font-weight:700}.journal-live-price [data-live-points]{font-size:12px}
+.journal-calc-note{margin:4px 0 12px;font-size:10px;line-height:1.5}.journal-live-price{margin-top:7px;color:#9aabc0;font:11px "DM Mono",monospace}.journal-live-price span{margin-left:7px;font-weight:700}
 @media(max-width:620px){.journal-pnl{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* QUANTORA premium responsive visual layer — presentation only; strategy, data and API logic untouched */
@@ -222,143 +208,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
 
-
-/* TRADE ANALYTICS · UI-ONLY PREMIUM POLISH (no logic or markup changes) */
-.journal-modal{background:radial-gradient(ellipse at 50% 0%,rgba(27,48,75,.62),rgba(3,8,16,.96) 58%);backdrop-filter:blur(16px)}
-.journal-shell{max-width:1080px}
-.journal-modal-head{border:1px solid rgba(231,189,112,.24);background:linear-gradient(135deg,rgba(17,31,49,.97),rgba(7,17,30,.97));box-shadow:0 14px 38px rgba(0,0,0,.28)}
-.journal-modal-head .history-trade-title{color:#f0c879;letter-spacing:.8px;font-weight:800}
-.journal-modal-head .history-muted{margin-top:4px}
-.journal-close{background:linear-gradient(135deg,#1b3048,#101d30);border-color:rgba(231,189,112,.42);color:#f1d39a;transition:transform .18s ease,border-color .18s ease}
-.journal-close:active{transform:scale(.97)}
-.journal-modal .trade-history-panel{border:1px solid rgba(115,151,190,.2);border-radius:20px;background:linear-gradient(155deg,rgba(15,30,48,.98),rgba(7,18,31,.98));padding:clamp(14px,2.2vw,24px);box-shadow:0 18px 48px rgba(0,0,0,.28)}
-.journal-modal .trade-history-head h2{font-size:clamp(16px,2vw,20px);letter-spacing:.7px}
-.journal-modal .history-actions button{border-radius:12px;padding:10px 15px;background:linear-gradient(135deg,#1b3048,#101d30);border-color:rgba(231,189,112,.5);font-weight:800}
-.history-filters{gap:12px;margin:18px 0}
-.history-filter label{font-weight:800;letter-spacing:1px}
-.history-filter select{border-radius:13px;background:linear-gradient(135deg,#122840,#0d1d30);border-color:rgba(125,158,194,.35);box-shadow:inset 0 1px rgba(255,255,255,.025);transition:border-color .18s ease,box-shadow .18s ease}
-.history-filter select:focus{outline:0;border-color:#e7bd70;box-shadow:0 0 0 3px rgba(231,189,112,.12)}
-.history-stats{display:flex;gap:9px 10px;padding:14px;border:1px solid rgba(125,158,194,.2);border-radius:15px;background:linear-gradient(120deg,rgba(6,17,30,.92),rgba(13,29,47,.88));}
-.history-stats span{padding:5px 8px;border:1px solid rgba(125,158,194,.12);border-radius:8px;background:rgba(255,255,255,.018)}
-.history-stats b{color:#f0cb83;font-family:var(--mono);font-variant-numeric:tabular-nums}
-.history-trade{border:1px solid rgba(117,151,188,.23);border-radius:17px;background:linear-gradient(150deg,rgba(17,35,55,.96),rgba(8,21,36,.98));padding:clamp(13px,2vw,20px);box-shadow:0 12px 30px rgba(0,0,0,.16)}
-.history-trade-head{padding-bottom:12px;border-bottom:1px solid rgba(125,158,194,.13);margin-bottom:12px}
-.history-trade-title{letter-spacing:.15px}
-.history-trade-meta{line-height:1.55}
-.journal-live-price{margin-top:8px;font:500 13px var(--mono);color:#a9bbcf;letter-spacing:.1px}
-.history-levels{gap:10px}
-.history-level{border-radius:13px;border-color:rgba(125,158,194,.2);background:linear-gradient(145deg,rgba(17,39,61,.9),rgba(9,25,42,.96));padding:13px;min-height:76px}
-.history-level small,.journal-qty label,.journal-result small{font-size:10px;letter-spacing:1px;font-weight:800}
-.history-level b{font:700 15px var(--mono);font-variant-numeric:tabular-nums;color:#f0c879}
-.journal-pnl{gap:10px}
-.journal-qty,.journal-result{border:1px solid rgba(125,158,194,.2);border-radius:13px;background:linear-gradient(145deg,rgba(17,39,61,.9),rgba(9,25,42,.96));padding:13px}
-.journal-qty-input{width:100%;border-radius:11px!important;background:#0b1b2e!important;color:#f1f5fb!important;border:1px solid rgba(125,158,194,.34)!important;font:500 16px var(--mono)!important}
-.journal-result b{font:700 16px var(--mono);font-variant-numeric:tabular-nums}
-.journal-calc-note{line-height:1.65}
-.history-timeline{gap:11px;margin-top:16px}
-.history-event-card{border:1px solid rgba(125,158,194,.16);border-left:3px solid var(--gold);border-radius:0 13px 13px 0;background:linear-gradient(110deg,rgba(7,21,36,.98),rgba(13,29,47,.9));padding:14px 15px;box-shadow:0 7px 18px rgba(0,0,0,.12)}
-.history-event-top b{font-size:12px;letter-spacing:.55px}
-.history-event-top time{font-family:var(--mono)}
-.history-event-values{line-height:1.65}
-.history-event-values strong{font-family:var(--mono);font-size:13px}
-.history-event-card .history-muted{line-height:1.6}
-@media(max-width:620px){
- .journal-modal{padding:6px}
- .journal-shell{padding-top:2px}
- .journal-modal-head{padding:12px;border-radius:14px}
- .journal-modal .trade-history-panel{padding:12px;border-radius:16px}
- .journal-modal .trade-history-head{align-items:flex-start}
- .journal-modal .trade-history-head h2{font-size:15px}
- .journal-modal .history-actions button{padding:9px 11px;font-size:11px}
- .history-filters{gap:8px;margin:14px 0}
- .history-filter select{min-height:46px;font-size:12px}
- .history-stats{gap:7px;padding:10px}
- .history-stats span{padding:5px 6px;font-size:10px}
- .history-trade{padding:12px;border-radius:14px}
- .history-trade-title{font-size:13px}
- .history-levels{gap:8px}
- .history-level{min-height:68px;padding:10px}
- .history-level b{font-size:13px}
- .journal-pnl{gap:8px}
- .journal-qty,.journal-result{padding:10px}
- .journal-result b{font-size:14px}
- .history-event-card{padding:11px}
-}
-
-
-/* INSTITUTIONAL MARKET INTELLIGENCE · isolated dashboard styles */
-.mi-wrap{margin:28px 0 8px;display:grid;gap:16px}
-.mi-hero{border:1px solid rgba(231,189,112,.24);border-radius:18px;padding:20px;background:radial-gradient(ellipse at 90% 0%,rgba(66,105,147,.2),transparent 45%),linear-gradient(135deg,#101f32,#091522);box-shadow:0 16px 36px #0003}
-.mi-kicker{font-size:9px;letter-spacing:2px;color:var(--gold);font-weight:800}
-.mi-title{font-size:clamp(20px,2.5vw,28px);margin:7px 0 5px;letter-spacing:-.7px}
-.mi-sub{font-size:11px;color:var(--muted);line-height:1.6}
-.mi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.mi-card{min-width:0;border:1px solid rgba(125,158,194,.19);border-radius:16px;background:linear-gradient(145deg,#0e1c2d,#091522);padding:16px;box-shadow:0 12px 28px #0002}
-.mi-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
-.mi-card h3{margin:0;font-size:12px;letter-spacing:.8px}
-.mi-tag{font-size:9px;color:#9fb1c8;border:1px solid #30445c;border-radius:20px;padding:5px 8px;white-space:nowrap}
-.mi-muted{color:var(--muted);font-size:10px;line-height:1.6}
-.mi-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.mi-stat{padding:10px;border-radius:11px;background:#0a1929;border:1px solid #20334a;min-width:0}
-.mi-stat small{display:block;color:#8da0b7;font-size:9px;letter-spacing:.5px}
-.mi-stat b{display:block;margin-top:6px;font:700 15px var(--mono);color:#f0cb83;overflow-wrap:anywhere}
-.mi-asset-tabs{display:flex;gap:7px;flex-wrap:wrap}
-.mi-tab,.mi-refresh{border:1px solid #344b64;background:#12243a;color:#d8e4f2;padding:7px 12px;border-radius:9px;font-size:10px;font-weight:800}
-.mi-tab.active{border-color:var(--gold);color:var(--gold);background:#2a251b}
-.mi-refresh{color:var(--gold);border-color:#80683f}
-.mi-chart{width:100%;height:145px;display:block}
-.mi-chart-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:9px;color:var(--muted)}
-.mi-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
-.mi-news-list{display:grid;gap:0}
-.mi-news{display:block;padding:12px 0;border-top:1px solid #203047;text-decoration:none;color:var(--text)}
-.mi-news:first-child{border-top:0;padding-top:0}
-.mi-news:hover .mi-news-title{color:var(--gold)}
-.mi-news-meta{display:flex;gap:8px;flex-wrap:wrap;color:#8ea2bb;font-size:9px;margin-bottom:5px}
-.mi-news-title{font-size:11px;font-weight:800;line-height:1.5}
-.mi-news-desc{font-size:10px;color:var(--muted);line-height:1.5;margin-top:4px}
-.mi-table-wrap{overflow:auto}
-.mi-table{width:100%;border-collapse:collapse;min-width:460px;font-size:10px}
-.mi-table th,.mi-table td{padding:9px 8px;border-bottom:1px solid #203047;text-align:right;white-space:nowrap}
-.mi-table th:first-child,.mi-table td:first-child{text-align:left}
-.mi-table th{color:#8ea2bb;font-size:9px;letter-spacing:.5px}
-.mi-positive{color:var(--green)}.mi-negative{color:var(--red)}
-.mi-source-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.mi-source{font-size:9px;color:#d5b779;text-decoration:none;border:1px solid #4a402e;border-radius:8px;padding:6px 8px}
-.mi-note{font-size:9px;color:#8292a9;line-height:1.6}
-.mi-wide{grid-column:1/-1}
-@media(max-width:680px){.mi-grid{grid-template-columns:1fr}.mi-hero{padding:16px}.mi-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mi-card{padding:13px}.mi-wide{grid-column:auto}}
-
-
-/* MAIN CHART PRO CONTROLS · isolated chart presentation */
-.chart-panel{min-width:0}
-.chart-controlbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:9px 13px;border-top:1px solid rgba(126,153,185,.12);border-bottom:1px solid rgba(126,153,185,.12);background:linear-gradient(90deg,rgba(8,18,31,.96),rgba(14,27,43,.92))}
-.chart-control-group{display:flex;align-items:center;gap:5px;padding-right:8px;border-right:1px solid rgba(126,153,185,.18)}
-.chart-control-group:last-child{border-right:0}
-.chart-controlbar button{min-width:34px;height:30px;padding:0 9px;border:1px solid rgba(126,153,185,.24);border-radius:8px;background:linear-gradient(180deg,#1a2b41,#101d2e);color:#c5d2e2;font:700 10px var(--font);cursor:pointer}
-.chart-controlbar button:hover,.chart-controlbar button.active{border-color:rgba(231,189,112,.7);color:#f0cb83;background:#2a251b}
-.chart-controlbar button:active{transform:scale(.96)}
-.chart-controlbar .chart-control-spacer{flex:1}
-.chart-controlbar .chart-minimize{color:#e7bd70}
-.chart-panel .chart-wrap{touch-action:pan-y}
-.chart-panel:fullscreen{width:100%;height:100%;max-width:none;background:#070b13;padding:16px;overflow:auto}
-.chart-panel:fullscreen .chart-wrap{height:calc(100vh - 150px);min-height:360px}
-.chart-panel:fullscreen .chart-controlbar{position:sticky;top:0;z-index:5}
-.chart-panel.chart-panel-minimized .chart-wrap,.chart-panel.chart-panel-minimized .chart-foot{display:none!important}
-.chart-panel.chart-panel-minimized .chart-controlbar{border-bottom:0}
-.chart-panel.chart-panel-minimized .chart-controlbar .chart-control-group:not(:last-child){display:none}
-@media(max-width:620px){.chart-controlbar{gap:5px;padding:8px;overflow-x:auto;flex-wrap:nowrap}.chart-control-group{flex:0 0 auto;padding-right:5px}.chart-controlbar button{min-width:32px;height:29px;padding:0 7px;font-size:9px}.chart-controlbar .chart-control-spacer{display:none}.chart-panel:fullscreen{padding:7px}.chart-panel:fullscreen .chart-wrap{height:calc(100vh - 135px);min-height:260px}}
-
-
-.seo-content{margin:24px 0 18px;padding:clamp(16px,2.5vw,24px);border:1px solid rgba(126,153,185,.18);border-radius:16px;background:linear-gradient(145deg,rgba(15,24,39,.96),rgba(8,16,28,.98));color:var(--text)}
-.seo-content h2{font-size:16px;margin:0 0 9px;color:var(--gold)}.seo-content h3{font-size:12px;margin:17px 0 5px}
-.seo-content p,.seo-content li{font-size:11px;line-height:1.75;color:var(--muted)}.seo-content p{margin:6px 0}
-.seo-content ul{padding-left:18px;margin:6px 0}.seo-content .seo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 22px}
-@media(max-width:620px){.seo-content .seo-grid{grid-template-columns:1fr}}
-
 </style>
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebApplication","name":"Quantora","url":"https://quantoraofficial6.github.io/quantora-trading/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"A browser-based crypto and gold market analysis terminal with live prices, interactive charts, multi-timeframe analysis and rule-based trading signals.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
-</script>
 </head>
 <body>
 <div class="app">
@@ -378,15 +228,8 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
  <div class="market-card"><div class="muted">Loading markets…</div></div>
 </section>
 <main class="workspace">
- <section class="panel chart-panel" id="mainChartPanel">
+ <section class="panel">
   <div class="panel-head"><div><div class="chart-meta"><span class="selected-name" id="chartSymbol">BTCUSD</span><span class="selected-price" id="chartPrice">—</span></div><div class="panel-caption">PRICE ACTION · DELTA EXCHANGE</div></div><div class="chart-tools" id="timeframes"><button class="tf" data-tf="1m">1m</button><button class="tf" data-tf="5m">5m</button><button class="tf" data-tf="15m">15m</button><button class="tf" data-tf="1h">1H</button><button class="tf active" data-tf="2h">2H</button><button class="tf" data-tf="4h">4H</button><button class="tf" data-tf="1d">1D</button></div></div>
-<div class="chart-controlbar" id="chartControlbar" aria-label="Chart controls">
- <div class="chart-control-group"><button type="button" id="chartZoomIn" title="Zoom in" aria-label="Zoom in">＋</button><button type="button" id="chartZoomOut" title="Zoom out" aria-label="Zoom out">−</button></div>
- <div class="chart-control-group"><button type="button" id="chartFit" title="Fit all candles">Fit</button><button type="button" id="chartLive" title="Scroll to latest candle">Live</button></div>
- <div class="chart-control-group"><button type="button" id="chartAutoScale" title="Reset price scale">Auto</button><button type="button" id="chartCrosshair" title="Toggle crosshair mode" class="active">Crosshair</button></div>
- <span class="chart-control-spacer"></span>
- <div class="chart-control-group"><button type="button" id="chartFullscreen" title="Expand chart to full screen">⛶ Expand</button><button type="button" id="chartMinimize" class="chart-minimize" title="Minimize chart">− Minimize</button></div>
-</div>
   <div class="chart-wrap" id="chart"></div>
   <div class="chart-foot"><span>● Candlestick chart</span><span id="chartUpdated">Waiting for chart data</span><span>Prices in USD</span></div>
  </section>
@@ -433,79 +276,6 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
   <div class="liq-footnote">Switch between UTC day (05:30 IST) and India day (00:00 IST) to compare previous-day levels and signals. Signals use closed 15-minute candles. This tool does not place orders.</div>
  </div>
 </section>
-
-<section class="mi-wrap" id="institutionalIntelligence">
- <div class="mi-hero">
-  <div class="mi-kicker">QUANTORA · INSTITUTIONAL INTELLIGENCE</div>
-  <h2 class="mi-title">Follow the flows behind the market.</h2>
-  <div class="mi-sub">BTC · ETH · GOLD — official macro releases, reported futures positioning and live derivatives context.</div>
-  <div class="mi-asset-tabs" style="margin-top:14px">
-   <button class="mi-tab active" type="button" data-mi-asset="BTC">BTC</button>
-   <button class="mi-tab" type="button" data-mi-asset="ETH">ETH</button>
-   <button class="mi-tab" type="button" data-mi-asset="GOLD">GOLD</button>
-   <button class="mi-refresh" id="miRefresh" type="button">↻ Refresh intelligence</button>
-  </div>
-  <div class="mi-note" id="miUpdated" style="margin-top:10px">Connecting to public market sources…</div>
- </div>
- <div class="mi-grid">
-  <article class="mi-card">
-   <div class="mi-card-head"><div><h3>DERIVATIVES SNAPSHOT</h3><div class="mi-muted">Public exchange market data · not named institution holdings</div></div><span class="mi-tag" id="miDerivTag">BTC · USDT PERP</span></div>
-   <div class="mi-stat-grid">
-    <div class="mi-stat"><small>OPEN INTEREST</small><b id="miOI">—</b></div>
-    <div class="mi-stat"><small>FUNDING RATE</small><b id="miFunding">—</b></div>
-    <div class="mi-stat"><small>LONG / SHORT</small><b id="miRatio">—</b></div>
-   </div>
-   <div class="mi-muted" id="miDerivStatus" style="margin-top:10px">Waiting for exchange data…</div>
-  </article>
-  <article class="mi-card">
-   <div class="mi-card-head"><div><h3>INSTITUTIONAL POSITIONING</h3><div class="mi-muted">CFTC Commitments of Traders · reported futures positions</div></div><span class="mi-tag">WEEKLY / DELAYED</span></div>
-   <div class="mi-stat-grid">
-    <div class="mi-stat"><small>REPORT DATE</small><b id="miCotDate">—</b></div>
-    <div class="mi-stat"><small>MANAGED MONEY NET</small><b id="miCotNet">—</b></div>
-    <div class="mi-stat"><small>OPEN INTEREST</small><b id="miCotOI">—</b></div>
-   </div>
-   <div class="mi-muted" id="miCotStatus" style="margin-top:10px">Loading CFTC positioning…</div>
-   <div class="mi-source-row"><a class="mi-source" href="https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm" target="_blank" rel="noopener">CFTC official reports ↗</a></div>
-  </article>
-  <article class="mi-card mi-wide">
-   <div class="mi-card-head"><div><h3>GLOBAL MACRO & CENTRAL BANK NEWS</h3><div class="mi-muted">Official releases and statements · headlines link to original sources</div></div><span class="mi-tag">LIVE FEED</span></div>
-   <div class="mi-news-list" id="miNews"><div class="mi-muted">Loading official news feeds…</div></div>
-   <div class="mi-source-row"><a class="mi-source" href="https://www.federalreserve.gov/feeds/feeds.htm" target="_blank" rel="noopener">Federal Reserve feeds ↗</a><a class="mi-source" href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank" rel="noopener">FOMC calendar ↗</a><a class="mi-source" href="https://www.ecb.europa.eu/press/html/index.en.html" target="_blank" rel="noopener">ECB press ↗</a></div>
-  </article>
-  <article class="mi-card">
-   <div class="mi-card-head"><div><h3>WHAT INSTITUTIONS REPORT</h3><div class="mi-muted">How to interpret positioning categories</div></div><span class="mi-tag">CFTC DATA GUIDE</span></div>
-   <div class="mi-news-list">
-    <div class="mi-news"><div class="mi-news-title">Managed Money</div><div class="mi-news-desc">Funds and money managers; useful for tracking speculative futures positioning.</div></div>
-    <div class="mi-news"><div class="mi-news-title">Producer / Merchant</div><div class="mi-news-desc">Commercial participants such as producers, merchants, processors and users.</div></div>
-    <div class="mi-news"><div class="mi-news-title">Swap Dealers</div><div class="mi-news-desc">Dealers using futures to hedge swap exposures; not a simple directional bet.</div></div>
-    <div class="mi-news"><div class="mi-news-title">Asset Managers / Leveraged Funds</div><div class="mi-news-desc">Financial futures categories reported in the CFTC Traders in Financial Futures report.</div></div>
-   </div>
-   <div class="mi-note">CFTC reports aggregate categories, not named banks or each fund's live positions. Reports are generally based on Tuesday positions and published Friday.</div>
-  </article>
-  <article class="mi-card">
-   <div class="mi-card-head"><div><h3>DATA QUALITY & DISCLOSURE</h3><div class="mi-muted">Know what each feed can and cannot tell you</div></div><span class="mi-tag">SOURCE NOTES</span></div>
-   <div class="mi-news-list">
-    <div class="mi-news"><div class="mi-news-title">BTC / ETH derivatives</div><div class="mi-news-desc">Bybit public futures endpoints. Open interest is aggregate contract exposure; long/short ratio is account ratio, not exact institutional positioning.</div></div>
-    <div class="mi-news"><div class="mi-news-title">GOLD futures positioning</div><div class="mi-news-desc">CFTC Disaggregated COT data for COMEX Gold, reported weekly.</div></div>
-    <div class="mi-news"><div class="mi-news-title">SEC 13F filings</div><div class="mi-news-desc">Quarterly disclosed U.S. equity holdings. Not a real-time source and generally not BTC/ETH spot ownership.</div></div>
-   </div>
-   <div class="mi-source-row"><a class="mi-source" href="https://www.sec.gov/data-research/sec-markets-data/form-13f-data-sets" target="_blank" rel="noopener">SEC 13F datasets ↗</a><a class="mi-source" href="https://publicreporting.cftc.gov/Commitments-of-Traders/Disaggregated-Combined/kh3c-gbw2/about_data" target="_blank" rel="noopener">CFTC Disaggregated data ↗</a></div>
-  </article>
- </div>
-</section>
-
-<section class="seo-content" aria-labelledby="about-quantora">
- <h2 id="about-quantora">About Quantora Trading Terminal</h2>
- <p>Quantora is a browser-based market analysis terminal for traders who want to follow cryptocurrency and gold markets in one place. It brings live market prices, interactive candlestick charts, multiple timeframes and rule-based technical signals into a single responsive dashboard.</p>
- <div class="seo-grid">
-  <div><h3>Markets and live charts</h3><p>Follow Bitcoin (BTC), Ethereum (ETH), Solana (SOL), XRP and Tether Gold (XAUT) market data. Switch between 1-minute, 5-minute, 15-minute, 1-hour, 2-hour, 4-hour and daily chart timeframes.</p></div>
-  <div><h3>Technical market analysis</h3><p>Review price action, market structure, support and resistance areas, swing levels and strategy signals with the Quantora Dynamic Range Pro and Liquidity Sweep tools.</p></div>
-  <div><h3>Interactive chart workspace</h3><p>Inspect candles with chart zoom, pan, crosshair, fit-to-data and full-screen controls on desktop and mobile devices.</p></div>
-  <div><h3>Trade history and research</h3><p>Review recorded trade events and use market analytics as research and educational tools. Always verify market data and manage risk independently.</p></div>
- </div>
- <h3>Is Quantora a broker or exchange?</h3><p>No. Quantora is a market analysis and educational terminal. It does not execute trades, hold customer funds or provide personalized investment advice.</p>
- <h3>Does Quantora provide financial advice?</h3><p>No. Trading cryptocurrencies and other financial instruments involves risk. Signals and chart information are for research and education only, not a recommendation to buy or sell.</p>
-</section>
 <footer class="footer"><span>QUANTORA TERMINAL · VERSION 1.0</span><span>For research and education only. Not financial advice.</span></footer>
 </div>
 
@@ -526,43 +296,15 @@ const $=id=>document.getElementById(id);
 const fmt=n=>Number.isFinite(Number(n))?Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:4}):"—";
 const tfSeconds={"1m":60,"5m":300,"15m":900,"1h":3600,"2h":7200,"4h":14400,"1d":86400};
 const SUPABASE_URL="https://wxbclrvvqcfpanmuohlt.supabase.co",SUPABASE_KEY="sb_publishable_3BeMVDBkC0m6ls2BsGSSIA_m-iOQV_r";
-const tradeLogSeen=new Set(),tradeEventQueue=new Map();
-let tradeEventFlushBusy=false,tradeEventFlushTimer=null;
-async function fetchWithTimeout(url,options={},timeoutMs=15000){
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
- try{return await fetch(url,{...options,signal:controller.signal})}
- catch(e){if(e&&e.name==="AbortError")throw Error("Request timed out after "+Math.round(timeoutMs/1000)+" seconds");throw e}
- finally{clearTimeout(timer)}
-}
-function scheduleTradeEventFlush(delay=300){
- if(tradeEventFlushTimer)return;
- tradeEventFlushTimer=setTimeout(()=>{tradeEventFlushTimer=null;flushTradeEventQueue()},delay);
-}
-async function flushTradeEventQueue(){
- if(tradeEventFlushBusy||!tradeEventQueue.size)return;
- tradeEventFlushBusy=true;
- const batch=[...tradeEventQueue.values()].slice(0,100);
- batch.forEach(e=>tradeEventQueue.delete(e.event_key));
- // PostgREST bulk inserts require every row in the JSON array to have identical keys.
- // Normalize optional event fields to null so ENTRY/UPDATE/CLOSE/EXTREMES rows can share one batch.
- const batchColumns=[...new Set(batch.flatMap(e=>Object.keys(e)))];
- const normalizedBatch=batch.map(e=>Object.fromEntries(batchColumns.map(k=>[k,e[k]===undefined?null:e[k]])));
- try{
-  const r=await fetchWithTimeout(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(normalizedBatch)},20000);
-  if(!r.ok)throw Error("DB batch write "+r.status+" "+(await r.text()).slice(0,180));
- }catch(e){
-  batch.forEach(ev=>{if(!tradeEventQueue.has(ev.event_key))tradeEventQueue.set(ev.event_key,ev)});
-  $("historyConnection").textContent="Database save error · "+e.message;
-  console.error("Trade history batch save:",e);
- }finally{
-  tradeEventFlushBusy=false;
-  if(tradeEventQueue.size)scheduleTradeEventFlush(2500);
- }
-}
-function saveTradeEvent(ev){
+const tradeLogSeen=new Set();
+async function saveTradeEvent(ev){
  if(!ev||!ev.event_key||tradeLogSeen.has(ev.event_key))return;
- tradeLogSeen.add(ev.event_key);tradeEventQueue.set(ev.event_key,ev);
- if(tradeEventQueue.size>=100)scheduleTradeEventFlush(0);else scheduleTradeEventFlush();
+ tradeLogSeen.add(ev.event_key);
+ try{
+  const r=await fetch(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(ev)});
+  if(!r.ok){tradeLogSeen.delete(ev.event_key);throw Error("DB write "+r.status+" "+(await r.text()).slice(0,180))}
+
+ }catch(e){tradeLogSeen.delete(ev.event_key);$("historyConnection").textContent="Database save error · "+e.message;console.error("Trade history save:",e)}
 }
 function getJournalQuantities(){
  try{return JSON.parse(localStorage.getItem("quantora_journal_quantities")||"{}")}catch(_){return {}}
@@ -572,20 +314,19 @@ function saveJournalQuantity(key,value){
  try{localStorage.setItem("quantora_journal_quantities",JSON.stringify(all))}catch(e){console.warn("Could not save journal quantity",e)}
 }
 function journalNum(v){const n=Number(v);return Number.isFinite(n)?n:null}
-function journalMetadata(v){if(v&&typeof v==="object")return v;if(typeof v==="string"){try{const parsed=JSON.parse(v);return parsed&&typeof parsed==="object"?parsed:{}}catch(_){return {}}}return {}}
 function journalTradePoints(events,entryEvent){const close=[...events].reverse().find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");if(!close)return null;const entry=journalNum(entryEvent.entry_price??entryEvent.price),exit=journalNum(close.exit_price??close.price);if(entry==null||exit==null)return null;return entryEvent.side==="SELL"?entry-exit:exit-entry;}
 
 function formatJournalTime(value,full=false){return new Date(value).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",dateStyle:full?"full":"medium",timeStyle:"medium",hour12:true})}
 function updateJournalLivePrices(){
  document.querySelectorAll(".journal-live-price[data-live-symbol]").forEach(el=>{
-  if(el.dataset.closed==="true")return;
-  const symbol=el.dataset.liveSymbol,entry=Number(el.dataset.entry),live=marketData[symbol]?.price,side=el.dataset.side;
-  const raw=entry>0&&Number.isFinite(live)?(side==="SELL"?entry-live:live-entry):null;
-  const pct=raw==null||entry<=0?null:raw/entry*100;
-  const percentEl=el.querySelector("[data-live-percent]"),pointsEl=el.querySelector("[data-live-points]");
+  const symbol=el.dataset.liveSymbol,entry=Number(el.dataset.entry),live=marketData[symbol]?.price;
+  const pct=entry>0&&Number.isFinite(live)?(live-entry)/entry*100:null;
+  const span=el.querySelector("span");
   el.childNodes[0].textContent="LIVE PRICE · "+(Number.isFinite(live)?fmt(live):"—")+" ";
-  if(percentEl){percentEl.textContent=pct==null?"":(pct>0?"+":"")+pct.toFixed(2)+"%";percentEl.className=pct==null?"":pct>=0?"positive":"negative";}
-  if(pointsEl){pointsEl.textContent=raw==null?"":fmtSigned(raw)+" pts";pointsEl.className=raw==null?"":raw>=0?"positive":"negative";}
+  if(span){
+   span.textContent=pct==null?"":(pct>0?"+":"")+pct.toFixed(2)+"%";
+   span.className=pct==null?"":pct>=0?"positive":"negative";
+  }
  });
 }
 async function loadTradeHistory(){
@@ -604,16 +345,13 @@ async function loadTradeHistory(){
   if(statsPanel)statsPanel.hidden=false;
   if(rowsPanel)rowsPanel.hidden=false;
   const allRows=[];let offset=0,batchSize=1000;
-  const historyCutoff=new Date(Date.now()-30*24*60*60*1000).toISOString();
   while(true){
-   let url=SUPABASE_URL+"/rest/v1/trade_history_events?select=*&candle_time=gte."+encodeURIComponent(historyCutoff)+"&order=candle_time.desc,id.desc&limit="+batchSize+"&offset="+offset;
-   const r=await fetchWithTimeout(url,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Prefer:"count=none"}},15000);
+   let url=SUPABASE_URL+"/rest/v1/trade_history_events?select=*&order=candle_time.desc,id.desc&limit="+batchSize+"&offset="+offset;
+   const r=await fetch(url,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Prefer:"count=none"}});
    if(!r.ok)throw Error("History load "+r.status+" "+(await r.text()).slice(0,160));
    const batch=await r.json();allRows.push(...batch);if(batch.length<batchSize)break;offset+=batchSize;
   }
   const rows=allRows.filter(x=>
-   String(x.event_key||"").startsWith("DRP3:")&&
-   new Date(x.candle_time||x.occurred_at).getTime()>=Date.now()-30*24*60*60*1000&&
    String(x.symbol||"").trim().toUpperCase()===coinFilter.trim().toUpperCase()&&
    String(x.timeframe||"").trim().toLowerCase()===tfFilter.trim().toLowerCase()
   );
@@ -649,11 +387,6 @@ async function loadTradeHistory(){
       trades.push([activeTrade.key,activeTrade.events]);
       activeTrade=null;
      }
-     continue;
-    }
-    if(e.event_type==="TRADE_EXTREMES"){
-     const closedTrade=[...trades].reverse().find(([key])=>key===(e.trade_key||e.event_key));
-     if(closedTrade)closedTrade[1].push(e);
      continue;
     }
     if(activeTrade&&activeTrade.side===e.side&&(e.trade_key||e.event_key)===activeTrade.key)activeTrade.events.push(e);
@@ -707,7 +440,7 @@ async function loadTradeHistory(){
    const pct=points!=null&&entry>0?points/entry*100:null;
    const resultClass=pnl==null?"":pnl>=0?"positive":"negative";
    const fmtSigned=v=>(v>0?"+":"")+fmt(v);
-   const eventCards=events.filter(e=>e.event_type!=="TRADE_EXTREMES").map(e=>{
+   const eventCards=events.map(e=>{
     let label=e.event_type==="ENTRY"?"ENTRY / TRADE OPENED":e.event_type==="RANGE_UPDATE"?"RANGE BREAK · STOP TRAILED":e.event_type==="TARGET_HIT"?"TARGET REACHED · TRADE CONTINUES":e.event_type==="STOP_LOSS_HIT"?"STOP LOSS HIT":e.event_type==="TRADE_CLOSED"?"TRADE CLOSED":e.event_type==="SETUP_CANCELLED"?"SETUP CANCELLED":e.event_type==="SIGNAL_BLOCKED"?"SIGNAL FILTERED":"TRADE UPDATE";
     const candle=e.candle_time||e.occurred_at,localTime=formatJournalTime(candle,false);
     const priceLabel=e.event_type==="TARGET_HIT"?"Target level touched":e.event_type==="STOP_LOSS_HIT"?"SL-trigger candle close / recorded exit":e.event_type==="RANGE_UPDATE"?"Breakout candle close":e.event_type==="ENTRY"?"Signal candle close":"Recorded market price";
@@ -726,21 +459,10 @@ async function loadTradeHistory(){
    const quantityBlock='<div class="journal-pnl"><div class="journal-qty"><label>QUANTITY</label><input class="journal-qty-input" type="number" min="0" step="any" inputmode="decimal" data-trade-key="'+encodeURIComponent(key)+'" value="'+String(qtyRaw)+'" aria-label="Quantity for '+entryEvent.symbol+' '+entryEvent.side+' trade"></div><div class="journal-result"><small>POINTS · ENTRY TO EXIT</small><b class="'+(points==null?"":points>=0?"positive":"negative")+'">'+(points==null?"Pending SL exit":fmtSigned(points)+" pts")+'</b></div><div class="journal-result"><small>PROFIT / LOSS</small><b class="'+resultClass+'">'+(pnl==null?"—":(pnl>0?"+":"")+fmt(pnl))+'</b></div><div class="journal-result"><small>RETURN %</small><b class="'+(pct==null?"":pct>=0?"positive":"negative")+'">'+(pct==null?"—":(pct>0?"+":"")+pct.toFixed(2)+"%")+'</b></div></div><div class="history-muted journal-calc-note">'+(isClosed?"Calculated from entry price and recorded SL-exit price.":"Trade is still active; final P&L will appear after SL exit.")+' · P&L = points × quantity; percentage is based on entry price, before fees/leverage/contract multiplier.</div>';
    const live=marketData[entryEvent.symbol]?.price;
    const livePct=entry!=null&&entry>0&&Number.isFinite(live)?(live-entry)/entry*100:null;
-   const livePoints=entry!=null&&Number.isFinite(live)?(entryEvent.side==="SELL"?entry-live:live-entry):null;
-   const liveTradePct=livePoints==null||entry<=0?null:livePoints/entry*100;
-   const displayPoints=isClosed?points:livePoints,displayPct=isClosed?pct:liveTradePct,displayPrice=isClosed?exit:live;
-   const liveLine='<div class="journal-live-price" data-live-symbol="'+entryEvent.symbol+'" data-entry="'+(entry??"")+'" data-side="'+entryEvent.side+'" data-closed="'+(isClosed?"true":"false")+'">'+(isClosed?"EXIT PRICE · ":"LIVE PRICE · ")+(Number.isFinite(displayPrice)?fmt(displayPrice):"—")+' <span data-live-percent class="'+(displayPct==null?"":displayPct>=0?"positive":"negative")+'">'+(displayPct==null?"":(displayPct>0?"+":"")+displayPct.toFixed(2)+"%")+'</span><span data-live-points class="'+(displayPoints==null?"":displayPoints>=0?"positive":"negative")+'">'+(displayPoints==null?"":fmtSigned(displayPoints)+" pts")+'</span></div>';
-   const extremeEvent=events.find(e=>e.event_type==="TRADE_EXTREMES");
-   // Supabase may return the JSON metadata column as either an object or serialized text.
-   // The close event already stores both excursion values, so no extra event row is required.
-   const extremeMeta=journalMetadata(extremeEvent?.metadata??stopEvent?.metadata);
-   const favorablePts=journalNum(extremeMeta.max_favorable_points),adversePts=journalNum(extremeMeta.max_adverse_points);
-   const excursion=isClosed&&favorablePts!=null&&adversePts!=null?'<div class="history-muted" style="margin-top:5px;font-size:12px">HIGH <b class="positive">'+fmtSigned(favorablePts)+' pts</b> · LOW <b class="negative">'+fmtSigned(adversePts)+' pts</b></div>':"";
-   return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div>'+liveLine+excursion+'</div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
+   const liveLine='<div class="journal-live-price" data-live-symbol="'+entryEvent.symbol+'" data-entry="'+(entry??"")+'">LIVE PRICE · '+(Number.isFinite(live)?fmt(live):"—")+' <span class="'+(livePct==null?"":livePct>=0?"positive":"negative")+'">'+(livePct==null?"":(livePct>0?"+":"")+livePct.toFixed(2)+"%")+'</span></div>';
+   return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div>'+liveLine+'</div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
   }).join(""):'<div class="history-muted">No trades match these filters.</div>';
-  // Apply the latest available ticker snapshot after trade cards are inserted.
-  updateJournalLivePrices();
- }catch(e){const message=e&&e.message?e.message:"Unknown database error";$("historyConnection").textContent="Database unavailable · "+message;$("historyRows").innerHTML='<div class="history-muted">Could not load history. '+message+'</div>';console.error("Trade history load:",e)}
+ }catch(e){$("historyConnection").textContent="Database unavailable · "+e.message;$("historyRows").innerHTML='<div class="history-muted">Could not load history. '+e.message+'</div>';console.error(e)}
  finally{if(refreshBtn){refreshBtn.disabled=false;refreshBtn.textContent="↻ Refresh"}}
 }
 
@@ -772,96 +494,17 @@ $("tradeJournalOpen")?.addEventListener("click",()=>{$("tradeJournalModal").hidd
 $("tradeJournalClose")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=true;document.body.style.overflow=""});
 $("tradeJournalModal")?.addEventListener("click",e=>{if(e.target===$("tradeJournalModal")){$("tradeJournalModal").hidden=true;document.body.style.overflow=""}});
 
-// Keep the current view and position when the user refreshes this page.
-const QUANTORA_VIEW_STATE_KEY="quantora_view_state_v1";
-function saveQuantoraViewState(){
- try{
-  sessionStorage.setItem(QUANTORA_VIEW_STATE_KEY,JSON.stringify({
-   strategy:$("liquidityView")?.hidden===false?"liquidity":"classic",
-   analyticsOpen:$("tradeJournalModal")?.hidden===false,
-   scrollY:window.scrollY||window.pageYOffset||0,
-   historySymbol:$("historySymbolFilter")?.value||"",
-   historyTimeframe:$("historyTimeframeFilter")?.value||"",
-   liqDayMode:liqDayMode,
-   liqSelected:liqSelected
-  }));
- }catch(_){}
-}
-function restoreQuantoraViewState(){
- let state;
- try{state=JSON.parse(sessionStorage.getItem(QUANTORA_VIEW_STATE_KEY)||"null")}catch(_){}
- if(!state)return;
- if(state.strategy==="liquidity")showStrategy("liquidity");
- if(state.liqDayMode&&state.liqDayMode!==liqDayMode)setLiquidityDayMode(state.liqDayMode);
- if(state.liqSelected&&markets.some(m=>m.symbol===state.liqSelected))liqSelected=state.liqSelected;
- if(state.analyticsOpen){
-  $("tradeJournalModal").hidden=false;
-  document.body.style.overflow="hidden";
-  if(state.historySymbol)$("historySymbolFilter").value=state.historySymbol;
-  if(state.historyTimeframe)$("historyTimeframeFilter").value=state.historyTimeframe;
-  if(state.historySymbol&&state.historyTimeframe)loadTradeHistory();
- }
- requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,Math.max(0,Number(state.scrollY)||0))));
-}
-window.addEventListener("beforeunload",saveQuantoraViewState);
-window.addEventListener("pagehide",saveQuantoraViewState);
-restoreQuantoraViewState();
 
 function setConnection(s,error=false){$("connection").textContent=s;$("connection").style.color=error?"#ff647c":"#8292a9"}
 function initChart(){
  const el=$("chart");
  if(!window.LightweightCharts){el.innerHTML='<div class="chart-placeholder">Chart library could not be loaded. Check your internet connection.</div>';return}
- chart=LightweightCharts.createChart(el,{width:el.clientWidth,height:el.clientHeight,layout:{background:{type:"solid",color:"#0d1522"},textColor:"#8192a9",fontFamily:"DM Mono, monospace"},grid:{vertLines:{color:"#172437"},horzLines:{color:"#172437"}},rightPriceScale:{borderColor:"#26364b"},timeScale:{borderColor:"#26364b",timeVisible:true,secondsVisible:false},handleScroll:{mouseWheel:true,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:true},handleScale:{axisPressedMouseMove:true,mouseWheel:true,pinch:true,axisDoubleClickReset:true},crosshair:{mode:LightweightCharts.CrosshairMode.Normal}});
+ chart=LightweightCharts.createChart(el,{width:el.clientWidth,height:el.clientHeight,layout:{background:{type:"solid",color:"#0d1522"},textColor:"#8192a9",fontFamily:"DM Mono, monospace"},grid:{vertLines:{color:"#172437"},horzLines:{color:"#172437"}},rightPriceScale:{borderColor:"#26364b"},timeScale:{borderColor:"#26364b",timeVisible:true,secondsVisible:false},crosshair:{mode:LightweightCharts.CrosshairMode.Normal}});
  candleSeries=chart.addCandlestickSeries({upColor:"#31d6a0",downColor:"#ff647c",borderUpColor:"#31d6a0",borderDownColor:"#ff647c",wickUpColor:"#31d6a0",wickDownColor:"#ff647c"});
  new ResizeObserver(()=>{if(chart)chart.applyOptions({width:el.clientWidth,height:el.clientHeight})}).observe(el);
 }
-
- let chartCrosshairMagnet=false;
- function chartVisibleZoom(factor){
-  if(!chart)return;
-  const ts=chart.timeScale(),r=ts.getVisibleLogicalRange();
-  if(!r){ts.fitContent();return}
-  const mid=(r.from+r.to)/2,span=Math.max(8,(r.to-r.from)*factor);
-  ts.setVisibleLogicalRange({from:mid-span/2,to:mid+span/2});
- }
- function setupMainChartControls(){
-  const panel=$("mainChartPanel");
-  $("chartZoomIn")?.addEventListener("click",()=>chartVisibleZoom(.72));
-  $("chartZoomOut")?.addEventListener("click",()=>chartVisibleZoom(1.38));
-  $("chartFit")?.addEventListener("click",()=>{if(chart){chart.timeScale().fitContent();chart.priceScale("right").applyOptions({autoScale:true})}});
-  $("chartLive")?.addEventListener("click",()=>{if(chart)chart.timeScale().scrollToRealTime()});
-  $("chartAutoScale")?.addEventListener("click",()=>{if(chart)chart.priceScale("right").applyOptions({autoScale:true})});
-  $("chartCrosshair")?.addEventListener("click",e=>{
-   chartCrosshairMagnet=!chartCrosshairMagnet;
-   if(chart)chart.applyOptions({crosshair:{mode:chartCrosshairMagnet?LightweightCharts.CrosshairMode.Magnet:LightweightCharts.CrosshairMode.Normal}});
-   e.currentTarget.classList.toggle("active",!chartCrosshairMagnet);
-   e.currentTarget.textContent=chartCrosshairMagnet?"Magnet":"Crosshair";
-  });
-  $("chartMinimize")?.addEventListener("click",()=>{
-   if(!panel)return;
-   const collapsed=panel.classList.toggle("chart-panel-minimized");
-   $("chartMinimize").textContent=collapsed?"＋ Restore":"− Minimize";
-   $("chartMinimize").title=collapsed?"Restore chart":"Minimize chart";
-   if(!collapsed&&chart)requestAnimationFrame(()=>chart.applyOptions({width:$("chart").clientWidth,height:$("chart").clientHeight}));
-  });
-  $("chartFullscreen")?.addEventListener("click",async()=>{
-   if(!panel)return;
-   try{
-    if(document.fullscreenElement===panel)await document.exitFullscreen();
-    else if(panel.requestFullscreen)await panel.requestFullscreen();
-    else throw Error("Fullscreen is not supported in this browser");
-   }catch(e){$("chartUpdated").textContent="Fullscreen unavailable · "+e.message}
-  });
-  document.addEventListener("fullscreenchange",()=>{
-   const active=document.fullscreenElement===panel;
-   $("chartFullscreen").textContent=active?"⤢ Exit":"⛶ Expand";
-   $("chartFullscreen").title=active?"Exit full screen":"Expand chart to full screen";
-   if(chart)requestAnimationFrame(()=>chart.applyOptions({width:$("chart").clientWidth,height:$("chart").clientHeight}));
-  });
- }
-
 async function fetchAllTickers(){
- const r=await fetchWithTimeout(API+"/v2/tickers?contract_types=perpetual_futures",{cache:"no-store",headers:{Accept:"application/json"}},10000);
+ const r=await fetch(API+"/v2/tickers?contract_types=perpetual_futures",{cache:"no-store",headers:{Accept:"application/json"}});
  if(!r.ok)throw Error("Ticker API HTTP "+r.status);
  const j=await r.json();
  if(j.success===false)throw Error(j.error||"Ticker API returned an error");
@@ -878,7 +521,7 @@ async function fetchAllTickers(){
  return map;
 }
 async function fetchTicker(m){
- const r=await fetchWithTimeout(API+"/v2/tickers/"+encodeURIComponent(m),{cache:"no-store",headers:{Accept:"application/json"}},10000);
+ const r=await fetch(API+"/v2/tickers/"+encodeURIComponent(m),{cache:"no-store",headers:{Accept:"application/json"}});
  if(!r.ok)throw Error(m+" ticker HTTP "+r.status);
  const j=await r.json(),t=Array.isArray(j.result)?j.result[0]:j.result;
  if(!t)throw Error(m+" ticker unavailable");
@@ -916,35 +559,9 @@ async function refreshTickers(){
 async function fetchCandlesFor(symbol,tf,limit=240){
  const sec=tfSeconds[tf],end=Math.floor(Date.now()/1000),start=end-sec*limit;
  const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(symbol)+"&start="+start+"&end="+end;
- const r=await fetchWithTimeout(url,{cache:"no-store"},12000);if(!r.ok)throw Error("Candle API "+r.status);
+ const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("Candle API "+r.status);
  const j=await r.json();if(j.success===false)throw Error("Candle data request failed");
  return (j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time).filter((c,i,a)=>!i||c.time!==a[i-1].time);
-}
-// Historical candle cache: load the available history in non-overlapping 2,000-candle windows.
-const historicalCandleCache=new Map();
-async function fetchAllHistoricalCandles(symbol,tf){
- const key=symbol+"|"+tf;
- if(historicalCandleCache.has(key))return historicalCandleCache.get(key);
- const sec=tfSeconds[tf],now=Math.floor(Date.now()/1000),historyStart=now-30*86400,chunkSeconds=sec*2000;
- const collected=new Map();let end=now,batches=0;
- while(end>historyStart&&batches<24){
-  const start=Math.max(historyStart,end-chunkSeconds);
-  const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(symbol)+"&start="+start+"&end="+end;
-  const response=await fetchWithTimeout(url,{cache:"no-store",headers:{Accept:"application/json"}},12000);
-  if(!response.ok)throw Error("Historical candle API "+response.status);
-  const payload=await response.json();
-  if(payload.success===false)throw Error("Historical candle data request failed");
-  const batch=(payload.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}))
-   .filter(c=>Object.values(c).every(Number.isFinite)&&c.time<end&&c.time>=start);
-  batch.forEach(c=>collected.set(c.time,c));
-  batches++;
-  if(batch.length<1900)break;
-  end=start;
- }
- const all=[...collected.values()].sort((a,b)=>a.time-b.time);
- if(!all.length)throw Error("No historical candles returned");
- historicalCandleCache.set(key,all);
- return all;
 }
 async function fetchCandles(){return fetchCandlesFor(selected,timeframe,240)}
 let chartHasFit=false,livePriceLine=null;
@@ -984,118 +601,64 @@ let strategyPriceLines=[];
 function clearStrategyLines(){strategyPriceLines.forEach(x=>{try{candleSeries.removePriceLine(x)}catch(_){}});strategyPriceLines=[]}
 function addStrategyLine(p,color,label,style=2){const x=priceLine(p,color,label,style);if(x)strategyPriceLines.push(x)}
 function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=timeframe){
- const historyCutoff=Math.floor(Date.now()/1000)-30*24*60*60;
- candles=candles.filter(c=>c&&Number.isFinite(c.time)&&c.time>=historyCutoff);
- const history=[];
- let pos=null,lastEvent=null;
+ const history=[];let pos=null,lastEvent=null;
  const pushEvent=(side,kind,price,time,detail)=>{
-  history.unshift({side,kind,price,time,detail});
-  if(history.length>8)history.pop();
-  const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")||kind.includes("TRAILING SL HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
-  const activeEntryTime=pos?.entryTime??time;
-  const tradeKey=["DRP3",scanSymbol,scanTimeframe,activeEntryTime].join(":");
-  const eventKey=["DRP3",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
-  const metadata={event_label:kind};
-  if(eventType==="STOP_LOSS_HIT"&&pos){
-   metadata.max_favorable_points=Number(pos.maxFavorablePoints||0);
-   metadata.max_adverse_points=Number(pos.maxAdversePoints||0);
-  }
-  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata});
-  if(eventType==="STOP_LOSS_HIT"&&pos){
-   const extremesKey=eventKey+":EXTREMES";
-   saveTradeEvent({event_key:extremesKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:"TRADE_EXTREMES",status:"CLOSED",price,entry_price:pos.entry,exit_price:price,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:"Maximum favorable and adverse movement during the closed trade.",metadata:{max_favorable_points:Number(pos.maxFavorablePoints||0),max_adverse_points:Number(pos.maxAdversePoints||0)}});
-  }
- };
- const makePosition=(side,first,second,entry,time,stop)=>{
-  const rangeHigh=Math.max(first.high,second.high),rangeLow=Math.min(first.low,second.low);
-  const risk=side==="BUY"?entry-stop:stop-entry;
-  if(!(risk>0))return null;
-  return {side,entry,sl:stop,target:side==="BUY"?entry+2*risk:entry-2*risk,rangeHigh,rangeLow,first,second,entryTime:time,targetHit:false,maxFavorablePoints:0,maxAdversePoints:0};
+  history.unshift({side,kind,price,time,detail});if(history.length>8)history.pop();
+  const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
+  const activeEntryTime=pos?.entryTime??time,tradeKey=["DRP",scanSymbol,scanTimeframe,activeEntryTime].join(":");
+  const eventKey=["DRP",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
+  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
  };
  for(let i=1;i<candles.length;i++){
   const prev=candles[i-1],cur=candles[i];
   if(pos){
-   const favorable=pos.side==="BUY"?cur.high-pos.entry:pos.entry-cur.low;
-   const adverse=pos.side==="BUY"?cur.low-pos.entry:pos.entry-cur.high;
-   pos.maxFavorablePoints=Math.max(pos.maxFavorablePoints??0,favorable);
-   pos.maxAdversePoints=Math.min(pos.maxAdversePoints??0,adverse);
    if(pos.side==="BUY"){
-    // A close below the complete active two-candle range reverses BUY to SELL.
     if(cur.close<pos.rangeLow){
-     const first=pos.first.low<=pos.second.low?pos.first:pos.second;
-     pushEvent("BUY","STOP LOSS HIT · BUY TRAILING SL",cur.close,cur.time,"Active two-candle range broke down on candle close; reversing to SELL.");
-     pos=makePosition("SELL",first,cur,cur.close,cur.time,first.high);
-     if(pos)pushEvent("SELL","SELL ENTRY · RANGE REVERSAL",cur.close,cur.time,"The lower-low candle of the broken BUY range is the new first candle; its high is the initial SELL stop.");
-     lastEvent="SELL";
-     continue;
+     pushEvent("BUY","BUY RANGE BROKEN · SELL REVERSAL",cur.close,cur.time,"Candle closed below the complete active range.");
+     const c1=pos.c1.low<=pos.c2.low?pos.c1:pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=c1.high,risk=sl-cur.close;
+     pos=risk>0?{side:"SELL",entry:cur.close,sl,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false}:null;
+     if(pos)pushEvent("SELL","SELL ENTRY · RANGE REVERSAL",cur.close,cur.time,"Previous C1/C2 candle with lower Low selected as new C1; breakdown candle is new C2.");
+     lastEvent="SELL";continue;
     }
-    if(!pos.targetHit&&cur.high>=pos.target){
-     pos.targetHit=true;pos.targetHitTime=cur.time;
-     pushEvent("BUY","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position stays active; range trailing continues.");
-     lastEvent="TARGET";
-    }
-    // Ignore candles inside the active range. Only a confirmed close above its high advances it.
+    if(!pos.targetHit&&cur.high>=pos.target){pos.targetHit=true;pos.targetHitTime=cur.time;pushEvent("BUY","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position remains active.");lastEvent="TARGET";}
     if(cur.close>pos.rangeHigh){
-     const first=pos.second,second=cur;
-     const lo=Math.min(first.low,second.low),hi=Math.max(first.high,second.high);
-     const risk=cur.close-lo,recalculateTarget=pos.targetHit;
-     pos.first=first;pos.second=second;pos.rangeLow=lo;pos.rangeHigh=hi;pos.sl=lo;
-     if(recalculateTarget&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;pos.targetHitTime=null;}
-     pushEvent("BUY",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,"New range: previous C2 becomes C1 and breakout candle becomes C2. SL is the lower low of the active pair.");
+     const c1=pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=lo,risk=cur.close-sl,recalc=pos.targetHit;
+     pos.c1=c1;pos.c2=c2;pos.rangeHigh=hi;pos.rangeLow=lo;pos.sl=sl;
+     if(recalc&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;pos.targetHitTime=null;}
+     pushEvent("BUY",recalc&&risk>0?"NEW TARGET · C3 RANGE":"NEW RANGE · C3 CONTINUATION",cur.close,cur.time,"Old C2 is new C1; breakout candle is new C2. SL is the lower Low of new C1/C2.");
     }
    }else{
-    // A close above the complete active two-candle range reverses SELL to BUY.
     if(cur.close>pos.rangeHigh){
-     const first=pos.first.high>=pos.second.high?pos.first:pos.second;
-     pushEvent("SELL","STOP LOSS HIT · SELL TRAILING SL",cur.close,cur.time,"Active two-candle range broke upward on candle close; reversing to BUY.");
-     pos=makePosition("BUY",first,cur,cur.close,cur.time,first.low);
-     if(pos)pushEvent("BUY","BUY ENTRY · RANGE REVERSAL",cur.close,cur.time,"The higher-high candle of the broken SELL range is the new first candle; its low is the initial BUY stop.");
-     lastEvent="BUY";
-     continue;
+     pushEvent("SELL","SELL RANGE BROKEN · BUY REVERSAL",cur.close,cur.time,"Candle closed above the complete active range.");
+     const c1=pos.c1.high>=pos.c2.high?pos.c1:pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=c1.low,risk=cur.close-sl;
+     pos=risk>0?{side:"BUY",entry:cur.close,sl,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false}:null;
+     if(pos)pushEvent("BUY","BUY ENTRY · RANGE REVERSAL",cur.close,cur.time,"Previous C1/C2 candle with higher High selected as new C1; breakout candle is new C2.");
+     lastEvent="BUY";continue;
     }
-    if(!pos.targetHit&&cur.low<=pos.target){
-     pos.targetHit=true;pos.targetHitTime=cur.time;
-     pushEvent("SELL","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position stays active; range trailing continues.");
-     lastEvent="TARGET";
-    }
-    // Ignore candles inside the active range. Only a confirmed close below its low advances it.
+    if(!pos.targetHit&&cur.low<=pos.target){pos.targetHit=true;pos.targetHitTime=cur.time;pushEvent("SELL","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position remains active.");lastEvent="TARGET";}
     if(cur.close<pos.rangeLow){
-     const first=pos.second,second=cur;
-     const hi=Math.max(first.high,second.high),lo=Math.min(first.low,second.low);
-     const risk=hi-cur.close,recalculateTarget=pos.targetHit;
-     pos.first=first;pos.second=second;pos.rangeHigh=hi;pos.rangeLow=lo;pos.sl=hi;
-     if(recalculateTarget&&risk>0){pos.target=cur.close-2*risk;pos.targetHit=false;pos.targetHitTime=null;}
-     pushEvent("SELL",recalculateTarget&&risk>0?"NEW TARGET · SL TRAILED":"NEW RANGE · SL TRAILED",cur.close,cur.time,"New range: previous C2 becomes C1 and breakdown candle becomes C2. SL is the higher high of the active pair.");
+     const c1=pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=hi,risk=sl-cur.close,recalc=pos.targetHit;
+     pos.c1=c1;pos.c2=c2;pos.rangeHigh=hi;pos.rangeLow=lo;pos.sl=sl;
+     if(recalc&&risk>0){pos.target=cur.close-2*risk;pos.targetHit=false;pos.targetHitTime=null;}
+     pushEvent("SELL",recalc&&risk>0?"NEW TARGET · C3 RANGE":"NEW RANGE · C3 CONTINUATION",cur.close,cur.time,"Old C2 is new C1; breakdown candle is new C2. SL is the higher High of new C1/C2.");
     }
    }
-  }else{
-   // Initial setup: any first candle may be C1; the next candle confirms beyond its full range.
-   if(cur.close>prev.high){
-    pos=makePosition("BUY",prev,cur,cur.close,cur.time,Math.min(prev.low,cur.low));
-    if(pos){pushEvent("BUY","BUY ENTRY",cur.close,cur.time,"C2 closed above C1 high. Initial SL is the lower low of C1 and C2.");lastEvent="BUY";}
-   }else if(cur.close<prev.low){
-    pos=makePosition("SELL",prev,cur,cur.close,cur.time,Math.max(prev.high,cur.high));
-    if(pos){pushEvent("SELL","SELL ENTRY",cur.close,cur.time,"C2 closed below C1 low. Initial SL is the higher high of C1 and C2.");lastEvent="SELL";}
-   }
+  }else if(cur.close>prev.high){
+   const c1=prev,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=lo,risk=cur.close-sl;
+   if(risk>0){pos={side:"BUY",entry:cur.close,sl,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false};pushEvent("BUY","BUY ENTRY · C1/C2 BREAKOUT",cur.close,cur.time,"C2 closed above C1 High; initial range formed by C1 and C2.");lastEvent="BUY";}
+  }else if(cur.close<prev.low){
+   const c1=prev,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=hi,risk=sl-cur.close;
+   if(risk>0){pos={side:"SELL",entry:cur.close,sl,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false};pushEvent("SELL","SELL ENTRY · C1/C2 BREAKDOWN",cur.close,cur.time,"C2 closed below C1 Low; initial range formed by C1 and C2.");lastEvent="SELL";}
   }
  }
  if(!silent){
   clearStrategyLines();
   if(pos){
-   const isBuy=pos.side==="BUY";
-   $("signalState").textContent=pos.targetHit?(pos.side+" · TARGET HIT · TRAILING"):pos.side;
-   $("signalState").style.color=isBuy?"#31d6a0":"#ff647c";
-   $("signalReason").textContent=(pos.targetHit?"TARGET HIT. Position remains active; range trailing continues. ":"")+(isBuy?"Two-candle range breakout active. ":"Two-candle range breakdown active. ")+"Inside-range candles are ignored. Signals and stop-loss reversals use closed "+timeframe+" candles.";
+   const isBuy=pos.side==="BUY";$("signalState").textContent=pos.targetHit?(pos.side+" · TARGET HIT · ACTIVE"):pos.side;$("signalState").style.color=isBuy?"#31d6a0":"#ff647c";
+   $("signalReason").textContent=(pos.targetHit?"TARGET HIT. Position remains active. ":"")+(isBuy?"C1/C2 range breakout strategy active. ":"C1/C2 range breakdown strategy active. ")+"C3 continuation and reversal require a candle close beyond the complete active range.";
    $("entry").textContent=fmt(pos.entry);$("stop").textContent=fmt(pos.sl);$("target").textContent=fmt(pos.target);$("rr").textContent="1 : 2";
-   addStrategyLine(pos.sl,"#ff647c","TRAILING STOP");
-   addStrategyLine(pos.target,"#31d6a0",pos.targetHit?"NEXT TARGET":"2R TARGET");
-   addStrategyLine(isBuy?pos.rangeHigh:pos.rangeLow,"#e7bd70","ACTIVE RANGE",1);
-  }else{
-   $("signalState").textContent=lastEvent==="TARGET"?"TARGET HIT":"WAIT";
-   $("signalState").style.color="#e7bd70";
-   $("signalReason").textContent="Waiting for a candle to close beyond the previous candle's high or low.";
-   $("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";
-  }
+   addStrategyLine(pos.sl,"#ff647c","RANGE STOP LOSS");addStrategyLine(pos.target,"#31d6a0",pos.targetHit?"NEXT TARGET":"2R TARGET");addStrategyLine(isBuy?pos.rangeHigh:pos.rangeLow,"#e7bd70","ACTIVE RANGE",1);
+  }else{$("signalState").textContent=lastEvent==="TARGET"?"TARGET HIT":"WAIT";$("signalState").style.color="#e7bd70";$("signalReason").textContent="Waiting for C2 to close beyond C1 High/Low. Signals use closed candles only.";$("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";}
   $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'</div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
  }
 }
@@ -1172,7 +735,7 @@ function addLiquidityLine(price,color,title,style=2){if(Number.isFinite(price)&&
 async function fetchLiquidityCandles(){
  const bounds=istDayBounds(liqDayMode),start=bounds.previousStart-86400*6,end=bounds.now;
  const url=API+"/v2/history/candles?resolution=15m&symbol="+encodeURIComponent(liqSelected)+"&start="+start+"&end="+end;
- const r=await fetchWithTimeout(url,{cache:"no-store",headers:{Accept:"application/json"}},12000);
+ const r=await fetch(url,{cache:"no-store",headers:{Accept:"application/json"}});
  if(!r.ok)throw Error("Delta Exchange 15m candle API HTTP "+r.status);
  const j=await r.json();
  if(j.success===false)throw Error(j.error||"Delta Exchange 15m candle data unavailable");
@@ -1359,7 +922,7 @@ async function scanAllMarketsAndTimeframes(){
  backgroundScanBusy=true;
  try{
   const pair=strategyScanPairs[backgroundScanIndex++%strategyScanPairs.length];
-  const candles=await fetchAllHistoricalCandles(pair.symbol,pair.tf);
+  const candles=await fetchCandlesFor(pair.symbol,pair.tf,240);
   const now=Math.floor(Date.now()/1000),sec=tfSeconds[pair.tf];
   const closed=candles.filter(c=>c.time+sec<=now);
   if(closed.length>=2)runStrategy(closed,true,pair.symbol,pair.tf);
@@ -1369,106 +932,11 @@ async function scanAllMarketsAndTimeframes(){
 }
 
 async function start(){
- tickClock();setInterval(tickClock,1000);
- try{initChart();setupMainChartControls()}catch(e){setConnection("Chart initialization failed · "+e.message,true);console.error("Main chart initialization:",e)}
- loadTradeHistory();setInterval(loadTradeHistory,300000);
- // Keep market data and Liquidity Sweep refreshing even if historical chart loading is slow.
- setInterval(refreshTickers,10000);setInterval(refreshChart,5000);
- setInterval(scanAllMarketsAndTimeframes,5000);
- setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},10000);
+ tickClock();setInterval(tickClock,1000);initChart();loadTradeHistory();setInterval(loadTradeHistory,300000);
  await Promise.allSettled([refreshTickers(),refreshChart()]);
- scanAllMarketsAndTimeframes();
+ setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
 }
 start();
-/* Institutional Market Intelligence: isolated read-only fetches; no strategy/Supabase writes. */
-(()=>{
- const $mi=id=>document.getElementById(id);
- const miState={asset:"BTC",busy:false};
- const miFmt=n=>{const v=Number(n);if(!Number.isFinite(v))return "—";return Math.abs(v)>=1e9?(v/1e9).toFixed(2)+"B":Math.abs(v)>=1e6?(v/1e6).toFixed(2)+"M":Math.abs(v)>=1e3?(v/1e3).toFixed(2)+"K":v.toLocaleString("en-US",{maximumFractionDigits:2})};
- const miDate=v=>v?new Date(v).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—";
- const miText=v=>String(v??"").replace(/<[^>]*>/g," ").replace(/&amp;/g,"&").replace(/&nbsp;/g," ").replace(/&#39;/g,"'").replace(/&quot;/g,'"').trim();
- async function miJson(url){const r=await fetch(url,{headers:{Accept:"application/json"}});if(!r.ok)throw Error("HTTP "+r.status);return r.json()}
- async function miDerivatives(){
-  const asset=miState.asset,symbol=asset==="GOLD"?"XAUTUSDT":asset+"USDT";
-  $("miDerivTag").textContent=asset+" · "+(asset==="GOLD"?"TOKENIZED GOLD":"USDT PERP");
-  $("miOI").textContent="—";$("miFunding").textContent="—";$("miRatio").textContent="—";
-  if(asset==="GOLD"){$("miDerivStatus").textContent="Bybit XAUT perpetual availability is checked live; CFTC COMEX Gold positioning is shown separately."; }
-  try{
-   const category="linear";
-   const [oi,fr,ratio]=await Promise.all([
-    miJson("https://api.bybit.com/v5/market/open-interest?category="+category+"&symbol="+symbol+"&intervalTime=1h&limit=1"),
-    miJson("https://api.bybit.com/v5/market/funding/history?category="+category+"&symbol="+symbol+"&limit=1"),
-    miJson("https://api.bybit.com/v5/market/account-ratio?category="+category+"&symbol="+symbol+"&period=1h&limit=1")
-   ]);
-   const o=oi.result?.list?.[0],f=fr.result?.list?.[0],a=ratio.result?.list?.[0];
-   if(oi.retCode!==0||fr.retCode!==0||ratio.retCode!==0)throw Error(oi.retMsg||fr.retMsg||ratio.retMsg||"Instrument unavailable");
-   $("miOI").textContent=o?miFmt(o.openInterest):"—";
-   $("miFunding").textContent=f?(Number(f.fundingRate)*100).toFixed(4)+"%":"—";
-   $("miRatio").textContent=a?Number(a.buyRatio).toFixed(2)+" / "+Number(a.sellRatio).toFixed(2):"—";
-   $("miDerivStatus").textContent="Bybit linear perpetual · latest public snapshot"+(o?" · "+new Date(Number(o.timestamp)).toLocaleString():"");
-  }catch(e){$("miDerivStatus").textContent="No live derivatives snapshot for "+symbol+": "+e.message+". Instrument may not be listed on this venue."}
- }
- async function miCOT(){
-  const asset=miState.asset,isGold=asset==="GOLD";
-  const dataset=isGold?"72hh-3qpy":"gpe5-46if";
-  const keyword=asset==="GOLD"?"GOLD":asset==="BTC"?"BITCOIN":"ETHER";
-  const longField=isGold?"m_money_positions_long_all":"lev_money_positions_long";
-  const shortField=isGold?"m_money_positions_short_all":"lev_money_positions_short";
-  const groupLabel=isGold?"Managed Money":"Leveraged Money";
-  $("miCotDate").textContent="—";$("miCotNet").textContent="—";$("miCotOI").textContent="—";
-  const params=new URLSearchParams({
-   "$select":"report_date_as_yyyy_mm_dd,contract_market_name,open_interest_all,"+longField+","+shortField,
-   "$where":"contract_market_name like '%"+keyword+"%'",
-   "$order":"report_date_as_yyyy_mm_dd DESC",
-   "$limit":"1"
-  });
-  const url="https://publicreporting.cftc.gov/resource/"+dataset+".json?"+params.toString();
-  try{
-   const rows=await miJson(url),r=rows[0];
-   if(!r)throw Error("No matching CFTC futures contract found");
-   const net=Number(r[longField])-Number(r[shortField]);
-   if(!Number.isFinite(net))throw Error("Position fields unavailable in report");
-   $("miCotDate").textContent=miDate(r.report_date_as_yyyy_mm_dd);
-   $("miCotNet").textContent=(net>0?"+":"")+miFmt(net);
-   $("miCotNet").className=net>=0?"mi-positive":"mi-negative";
-   $("miCotOI").textContent=miFmt(r.open_interest_all);
-   $("miCotStatus").textContent=r.contract_market_name+" · "+groupLabel+" net = long minus short · CFTC weekly report.";
-  }catch(e){$("miCotStatus").textContent="CFTC data unavailable for "+asset+": "+e.message+". Open the official report link to inspect available contracts."}
- }
- async function miNews(){
-  const host=$("miNews");host.innerHTML='<div class="mi-muted">Loading official news feeds…</div>';
-  const feeds=[
-   {name:"Federal Reserve",url:"https://www.federalreserve.gov/feeds/press_all.xml"},
-   {name:"Federal Reserve · Speeches",url:"https://www.federalreserve.gov/feeds/speeches_and_testimony.xml"},
-   {name:"ECB · Press releases",url:"https://www.ecb.europa.eu/rss/press.html"}
-  ];
-  const results=await Promise.allSettled(feeds.map(async feed=>{
-   const r=await fetch(feed.url,{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);
-   const xml=new DOMParser().parseFromString(await r.text(),"text/xml");
-   if(xml.querySelector("parsererror"))throw Error("Invalid feed");
-   return [...xml.querySelectorAll("item")].slice(0,8).map(n=>({source:feed.name,title:miText(n.querySelector("title")?.textContent),link:n.querySelector("link")?.textContent?.trim(),date:n.querySelector("pubDate")?.textContent,desc:miText(n.querySelector("description")?.textContent).slice(0,190)}));
-  }));
-  const items=results.flatMap(x=>x.status==="fulfilled"?x.value:[]);
-  items.sort((a,b)=>(Date.parse(b.date)||0)-(Date.parse(a.date)||0));
-  if(!items.length){host.innerHTML='<div class="mi-muted">Official RSS feeds could not be loaded directly by this browser (network/CORS). Use the source links above; no sample headlines are shown as live news.</div>';return}
-  host.innerHTML=items.slice(0,12).map(n=>'<a class="mi-news" href="'+(n.link||"#")+'" target="_blank" rel="noopener"><div class="mi-news-meta"><span>'+n.source+'</span><span>·</span><span>'+ (n.date?miDate(n.date):"Official update")+'</span></div><div class="mi-news-title">'+n.title+'</div>'+(n.desc?'<div class="mi-news-desc">'+n.desc+'</div>':"")+'</a>').join("");
- }
- async function miRefresh(){
-  if(miState.busy)return;miState.busy=true;
-  $("miRefresh").disabled=true;$("miRefresh").textContent="Refreshing…";
-  await Promise.allSettled([miDerivatives(),miCOT(),miNews()]);
-  $("miUpdated").textContent="Last checked "+new Date().toLocaleString()+" · Public sources · read-only";
-  miState.busy=false;$("miRefresh").disabled=false;$("miRefresh").textContent="↻ Refresh intelligence";
- }
- document.querySelectorAll("[data-mi-asset]").forEach(b=>b.addEventListener("click",()=>{
-  miState.asset=b.dataset.miAsset;
-  document.querySelectorAll("[data-mi-asset]").forEach(x=>x.classList.toggle("active",x===b));
-  miDerivatives();miCOT();
- }));
- $("miRefresh")?.addEventListener("click",miRefresh);
- miRefresh();
- setInterval(()=>{miDerivatives();miCOT()},300000);
-})();
 </script>
 </body>
 </html>
