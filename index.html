@@ -254,6 +254,44 @@ select,.history-filter select,.journal-qty-input{background-color:#14243a;border
  .market-card,.panel{box-shadow:0 8px 24px rgba(0,0,0,.18)}
  .brand-mark{width:36px;height:36px;border-radius:11px}
 }
+
+/* QUANTORA — structured obsidian terminal refresh (CSS only) */
+:root{--bg:#080d14;--panel:#0d1622;--panel2:#121f2e;--line:#26384a;--text:#edf5f8;--muted:#8da2b3;--gold:#5de0d0;--gold2:#2bb9b0;--green:#42d6a4;--red:#ff7185;--blue:#78baff}
+body{background:radial-gradient(ellipse at 8% 0%,rgba(35,178,174,.12),transparent 30%),radial-gradient(ellipse at 92% 8%,rgba(72,125,183,.11),transparent 28%),linear-gradient(180deg,#080e16,#080d14 48%,#0a111a);color:var(--text)}
+.app{max-width:1720px;padding:24px clamp(13px,2.6vw,40px) 42px}.topbar{position:relative;padding:9px 0 21px;border-bottom:1px solid rgba(119,160,178,.18)}
+.topbar:after{content:"";position:absolute;bottom:-1px;left:0;width:108px;height:2px;background:linear-gradient(90deg,#5de0d0,transparent)}
+.brand-mark{border:1px solid rgba(93,224,208,.48);border-radius:13px;background:linear-gradient(145deg,#1b3440,#101b28);color:#7cf0df;box-shadow:0 0 26px rgba(49,204,190,.12)}
+.brand-name{letter-spacing:3.8px}.brand-name span{color:#65e5d6}.brand-sub{letter-spacing:2.2px}
+.live-pill{border-color:rgba(66,214,164,.28);background:rgba(19,78,63,.22);color:#8ce9c8}
+.welcome{margin:29px 0 20px;align-items:center}.eyebrow{color:#68dfd2;letter-spacing:2.4px}
+.welcome h1{font-size:clamp(24px,2.2vw,33px);letter-spacing:-1.15px}.market-strip{gap:13px;margin-bottom:18px}
+.market-card,.panel,.trade-history-panel,.history-trade{background:linear-gradient(145deg,rgba(17,31,46,.97),rgba(10,19,30,.99));border:1px solid rgba(119,157,180,.19);box-shadow:0 10px 28px rgba(0,0,0,.19)}
+.market-card{border-radius:15px;padding:16px 17px;transition:transform .18s,border-color .18s,box-shadow .18s}
+.market-card:hover,.market-card.active{border-color:rgba(93,224,208,.58);box-shadow:0 14px 30px rgba(0,0,0,.25),0 0 0 1px rgba(93,224,208,.07);transform:translateY(-2px)}
+.market-card.active:after{height:2px;background:linear-gradient(90deg,transparent,#5de0d0,transparent)}
+.coin-icon{background:linear-gradient(145deg,#1c3944,#142435);color:#76e9dd;border:1px solid rgba(93,224,208,.16)}
+.workspace{gap:17px}.panel{border-radius:17px}.panel-head{padding:18px 20px;border-bottom-color:rgba(119,157,180,.15)}
+.panel-title{letter-spacing:1px}.chart-wrap{height:clamp(320px,32vw,465px);padding:12px 12px 0}
+.chart-tools .tf,.strategy-tab,.liq-coin,.liq-day-switch button,.history-actions button,.journal-close{border:1px solid rgba(119,157,180,.23);border-radius:9px;background:linear-gradient(180deg,#1a2b3b,#111e2c);color:#b9cbd5;box-shadow:inset 0 1px rgba(255,255,255,.045);transition:all .16s}
+.chart-tools .tf.active,.strategy-tab.active,.liq-day-switch button.active{color:#8af0e4;border-color:rgba(93,224,208,.62);background:linear-gradient(180deg,rgba(31,111,108,.42),rgba(17,49,56,.8));box-shadow:0 0 18px rgba(47,190,180,.09)}
+button:hover{border-color:rgba(93,224,208,.6);color:#e7fffc}button:active{transform:translateY(1px)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid rgba(93,224,208,.78);outline-offset:2px}
+.signal-main{padding:22px 21px 17px}.signal-label{letter-spacing:1.8px}.signal-state strong{font-size:clamp(25px,2.3vw,32px)}
+.signal-grid{gap:10px;padding:0 19px 19px}
+.signal-level,.metric,.history-level,.journal-qty,.journal-result{background:linear-gradient(145deg,rgba(23,42,59,.94),rgba(13,27,41,.98));border:1px solid rgba(119,157,180,.18);border-radius:11px}
+.strategy-switch{gap:10px;margin:20px 0 18px}.strategy-tab{padding:12px 18px}
+.liquidity-panel{padding-bottom:17px}.liquidity-coins{gap:10px;padding:17px 19px}.liq-coin{padding:13px}
+.liq-coin.active{border-color:rgba(93,224,208,.65);background:linear-gradient(145deg,#173c42,#142433);color:#9af1e7}
+.liquidity-layout{gap:16px;padding:0 17px}.liquidity-chart{height:clamp(320px,34vw,460px)}
+.trade-history-panel{border-radius:17px;margin:20px 0 27px;padding:clamp(14px,2vw,22px)}
+.trade-history-head h2,.history-trade-title,.history-event-top b{color:#7ce8dc}
+.history-trade{border-radius:12px;padding:14px}.history-event-card{border-left-color:#5de0d0;background:linear-gradient(110deg,rgba(17,44,54,.65),#0d1926 55%)}
+.history-event-price{color:#8ce9df}.history-filter select,.journal-qty-input{background:#101f2d;border-color:#344d60;color:#e8f4f5}
+.journal-modal{background:rgba(3,9,15,.95);backdrop-filter:blur(9px)}.sebi-ticker{border-color:rgba(93,224,208,.25);background:linear-gradient(90deg,#102a30,#121e2b,#102a30);color:#9aeee4}
+.footer{border-top:1px solid rgba(119,157,180,.12);margin-top:8px;padding-top:17px}
+@media(max-width:950px){.app{padding-left:16px;padding-right:16px}.workspace,.lower-grid{gap:13px}.panel-head{padding:16px}.liquidity-layout{padding:0 12px;gap:12px}}
+@media(max-width:560px){.app{padding:12px 11px 24px}.topbar{padding-bottom:15px}.welcome{margin:21px 0 14px}.market-strip{gap:8px}.market-card{padding:12px;border-radius:12px}.panel{border-radius:14px}.panel-head{padding:13px}.chart-wrap{height:310px;padding:8px 4px 0}.chart-tools{gap:4px}.chart-tools .tf{padding:7px 5px;font-size:9px}.signal-main{padding:17px 15px 14px}.signal-grid{padding:0 13px 14px;gap:8px}.strategy-switch{margin:14px 0;gap:7px}.strategy-tab{padding:10px 8px;font-size:10px}.liquidity-coins{padding:10px;gap:7px}.liquidity-layout{padding:0 9px}.liquidity-chart{height:300px}.trade-history-panel{padding:12px;border-radius:14px}.history-trade{padding:10px}}
+
 </style>
 </head>
 <body>
