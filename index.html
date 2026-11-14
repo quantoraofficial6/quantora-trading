@@ -324,7 +324,7 @@ function journalTradeExtremes(events,entryEvent,closeEvent){
  const end=closeEvent?toSeconds(closeEvent.candle_time||closeEvent.occurred_at):Math.floor(Date.now()/1000);
  if(!Number.isFinite(start)||!Number.isFinite(end)||!candles.length)return null;
  // Candle timestamps mark candle open; include the candle spanning the entry and exit timestamps.
- const span=candles.filter(c=>{const t=toSeconds(c.time);return Number.isFinite(t)&&t<=end&&t+(sec||0)>=start});
+ const span=candles.filter(c=>{const t=toSeconds(c.time);return Number.isFinite(t)&&t<=end&&t+(sec||0)>start});
  if(!span.length)return null;
  let high=Math.max(...span.map(c=>Number(c.high)).filter(Number.isFinite)),low=Math.min(...span.map(c=>Number(c.low)).filter(Number.isFinite));
  if(!Number.isFinite(high)||!Number.isFinite(low))return null;
