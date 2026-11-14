@@ -925,18 +925,19 @@ const historicalCandleCache=new Map();
 async function fetchAllHistoricalCandles(symbol,tf){
  const key=symbol+"|"+tf;
  if(historicalCandleCache.has(key))return historicalCandleCache.get(key);
- const sec=tfSeconds[tf],now=Math.floor(Date.now()/1000),chunkSeconds=sec*2000,maxBatches=50;
+ const sec=tfSeconds[tf],now=Math.floor(Date.now()/1000),historyStart=now-30*86400,chunkSeconds=sec*2000;
  const collected=new Map();let end=now,batches=0;
- for(;batches<maxBatches;batches++){
-  const start=end-chunkSeconds;
+ while(end>historyStart&&batches<24){
+  const start=Math.max(historyStart,end-chunkSeconds);
   const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(symbol)+"&start="+start+"&end="+end;
-  const response=await fetch(url,{cache:"no-store"});
+  const response=await fetchWithTimeout(url,{cache:"no-store",headers:{Accept:"application/json"}},12000);
   if(!response.ok)throw Error("Historical candle API "+response.status);
   const payload=await response.json();
   if(payload.success===false)throw Error("Historical candle data request failed");
   const batch=(payload.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}))
    .filter(c=>Object.values(c).every(Number.isFinite)&&c.time<end&&c.time>=start);
   batch.forEach(c=>collected.set(c.time,c));
+  batches++;
   if(batch.length<1900)break;
   end=start;
  }
@@ -945,7 +946,7 @@ async function fetchAllHistoricalCandles(symbol,tf){
  historicalCandleCache.set(key,all);
  return all;
 }
-async function fetchCandles(){return fetchAllHistoricalCandles(selected,timeframe)}
+async function fetchCandles(){return fetchCandlesFor(selected,timeframe,240)}
 let chartHasFit=false,livePriceLine=null;
 async function refreshChart(){
  if(chartBusy||!candleSeries)return;chartBusy=true;
@@ -1171,7 +1172,7 @@ function addLiquidityLine(price,color,title,style=2){if(Number.isFinite(price)&&
 async function fetchLiquidityCandles(){
  const bounds=istDayBounds(liqDayMode),start=bounds.previousStart-86400*6,end=bounds.now;
  const url=API+"/v2/history/candles?resolution=15m&symbol="+encodeURIComponent(liqSelected)+"&start="+start+"&end="+end;
- const r=await fetch(url,{cache:"no-store",headers:{Accept:"application/json"}});
+ const r=await fetchWithTimeout(url,{cache:"no-store",headers:{Accept:"application/json"}},12000);
  if(!r.ok)throw Error("Delta Exchange 15m candle API HTTP "+r.status);
  const j=await r.json();
  if(j.success===false)throw Error(j.error||"Delta Exchange 15m candle data unavailable");
@@ -1370,7 +1371,7 @@ async function scanAllMarketsAndTimeframes(){
 async function start(){
  tickClock();setInterval(tickClock,1000);initChart();setupMainChartControls();loadTradeHistory();setInterval(loadTradeHistory,300000);
  await Promise.allSettled([refreshTickers(),refreshChart()]);
- setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
+ setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,5000);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},10000);
 }
 start();
 /* Institutional Market Intelligence: isolated read-only fetches; no strategy/Supabase writes. */
