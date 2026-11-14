@@ -588,6 +588,25 @@ function updateJournalLivePrices(){
   }
  });
 }
+async function loadSignalActivity(){
+ const feed=$("signalFeed");if(!feed)return;
+ try{
+  const symbol=selected,timeframeValue=timeframe;
+  const prefix="DRP3:"+symbol+":"+timeframeValue+":";
+  const url=SUPABASE_URL+"/rest/v1/trade_history_events?select=side,event_type,price,entry_price,candle_time,details,metadata,event_key&event_key=like."+encodeURIComponent(prefix)+"*&order=candle_time.desc&limit=6";
+  const r=await fetchWithTimeout(url,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY}},12000);
+  if(!r.ok)throw Error("Signal activity "+r.status);
+  const rows=await r.json();
+  if(symbol!==selected||timeframeValue!==timeframe)return;
+  feed.innerHTML=rows.length?rows.map(e=>{
+   const side=String(e.side||"BUY").toUpperCase(),price=Number(e.price),entry=Number(e.entry_price);
+   const points=Number.isFinite(price)&&Number.isFinite(entry)?(side==="SELL"?entry-price:price-entry):null;
+   const label=e.metadata?.event_label||e.event_type||"SIGNAL";
+   const detail=e.details||"Strategy alert";
+   return '<div class="feed-item"><div><span class="'+(side==="BUY"?"positive":"negative")+'">'+label+'</span><small>'+detail+'</small><small>'+new Date(e.candle_time).toLocaleString()+'</small></div><div class="feed-side">'+fmt(price)+(points==null?"":'<small class="feed-points '+(points>=0?"positive":"negative")+'">'+fmtSigned(points)+" pts"+'</small>')+'</div></div>';
+  }).join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
+ }catch(e){console.warn("Signal activity load:",e)}
+}
 async function loadTradeHistory(){
  const refreshBtn=$("historyRefresh");
  if(refreshBtn){refreshBtn.disabled=true;refreshBtn.textContent="Loading…"}
@@ -1310,7 +1329,7 @@ async function scanAllMarketsAndTimeframes(){
 }
 
 async function start(){
- tickClock();setInterval(tickClock,1000);initChart();setupMainChartControls();loadTradeHistory();setInterval(loadTradeHistory,300000);
+ tickClock();setInterval(tickClock,1000);initChart();setupMainChartControls();loadTradeHistory();loadSignalActivity();setInterval(loadTradeHistory,300000);setInterval(loadSignalActivity,15000);
  await Promise.allSettled([refreshTickers(),refreshChart()]);
  setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
 }
