@@ -455,17 +455,23 @@ async function loadTradeHistoryOriginal(){
    const pct=points!=null&&entry>0?points/entry*100:null;
    const resultClass=pnl==null?"":pnl>=0?"positive":"negative";
    const fmtSigned=v=>(v>0?"+":"")+fmt(v);
+   const latestRangeEvent=[...events].reverse().find(x=>x.event_type==="RANGE_UPDATE"&&x.stop_loss!=null);
    const eventCards=events.map(e=>{
-    let label=e.event_type==="ENTRY"?"ENTRY / TRADE OPENED":e.event_type==="RANGE_UPDATE"?"RANGE BREAK · STOP TRAILED":e.event_type==="TARGET_HIT"?"TARGET REACHED · TRADE CONTINUES":e.event_type==="STOP_LOSS_HIT"?"STOP LOSS HIT":e.event_type==="TRADE_CLOSED"?"TRADE CLOSED":e.event_type==="SETUP_CANCELLED"?"SETUP CANCELLED":e.event_type==="SIGNAL_BLOCKED"?"SIGNAL FILTERED":"TRADE UPDATE";
+    const isTargetHit=e.event_type==="TARGET_HIT";
+    let label=e.event_type==="ENTRY"?"ENTRY / TRADE OPENED":e.event_type==="RANGE_UPDATE"?"RANGE BREAK · STOP TRAILED":isTargetHit?"TARGET HIT":e.event_type==="STOP_LOSS_HIT"?"STOP LOSS HIT":e.event_type==="TRADE_CLOSED"?"TRADE CLOSED":e.event_type==="SETUP_CANCELLED"?"SETUP CANCELLED":e.event_type==="SIGNAL_BLOCKED"?"SIGNAL FILTERED":"TRADE UPDATE";
     const candle=e.candle_time||e.occurred_at,localTime=formatJournalTime(candle,false);
-    const priceLabel=e.event_type==="TARGET_HIT"?"Target level touched":e.event_type==="STOP_LOSS_HIT"?"SL-trigger candle close / recorded exit":e.event_type==="RANGE_UPDATE"?"Breakout candle close":e.event_type==="ENTRY"?"Signal candle close":"Recorded market price";
+    const priceLabel=e.event_type==="STOP_LOSS_HIT"?"SL-trigger candle close / recorded exit":e.event_type==="RANGE_UPDATE"?"Breakout candle close":e.event_type==="ENTRY"?"Signal candle close":"Recorded market price";
     const levelBits=[];
+    if(isTargetHit){
+     const nextTarget=latestRangeEvent?.target_price??e.target_price;
+     const nextSL=latestRangeEvent?.stop_loss??e.stop_loss;
+     if(nextTarget!=null)levelBits.push("NEW TARGET: "+fmt(nextTarget));
+     if(nextSL!=null)levelBits.push("NEW SL: "+fmt(nextSL));
+     return '<div class="history-event-card"><div class="history-event-top"><b>'+label+'</b><time>'+localTime+'</time></div><div class="history-event-values">'+levelBits.map(v=>'<span>'+v+'</span>').join("")+'</div></div>';
+    }
     if(e.event_type==="ENTRY"||e.event_type==="RANGE_UPDATE"||e.event_type==="STOP_LOSS_HIT"){
      if(e.stop_loss!=null)levelBits.push("Stop Loss: "+fmt(e.stop_loss));
      if(e.target_price!=null)levelBits.push("Target: "+fmt(e.target_price));
-    }else if(e.event_type==="TARGET_HIT"){
-     if(e.target_price!=null)levelBits.push("Target reached: "+fmt(e.target_price));
-     if(e.stop_loss!=null)levelBits.push("Trailing SL remains: "+fmt(e.stop_loss));
     }
     return '<div class="history-event-card"><div class="history-event-top"><b>'+label+'</b><time>'+localTime+'</time></div><div class="history-event-values"><span>'+priceLabel+': <strong>'+fmt(e.price)+'</strong></span>'+levelBits.map(v=>'<span>'+v+'</span>').join("")+'</div><div class="history-muted">'+String(e.details||"")+'</div></div>';
    }).join("");
