@@ -581,6 +581,7 @@ async function loadTradeHistory(){
    const batch=await r.json();allRows.push(...batch);if(batch.length<batchSize)break;offset+=batchSize;
   }
   const rows=allRows.filter(x=>
+   String(x.event_key||"").startsWith("DRP2:")&&
    String(x.symbol||"").trim().toUpperCase()===coinFilter.trim().toUpperCase()&&
    String(x.timeframe||"").trim().toLowerCase()===tfFilter.trim().toLowerCase()
   );
@@ -837,7 +838,32 @@ async function fetchCandlesFor(symbol,tf,limit=240){
  const j=await r.json();if(j.success===false)throw Error("Candle data request failed");
  return (j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time).filter((c,i,a)=>!i||c.time!==a[i-1].time);
 }
-async function fetchCandles(){return fetchCandlesFor(selected,timeframe,240)}
+// Historical candle cache: load the available history in non-overlapping 2,000-candle windows.
+const historicalCandleCache=new Map();
+async function fetchAllHistoricalCandles(symbol,tf){
+ const key=symbol+"|"+tf;
+ if(historicalCandleCache.has(key))return historicalCandleCache.get(key);
+ const sec=tfSeconds[tf],now=Math.floor(Date.now()/1000),chunkSeconds=sec*2000,maxBatches=50;
+ const collected=new Map();let end=now,batches=0;
+ for(;batches<maxBatches;batches++){
+  const start=end-chunkSeconds;
+  const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(symbol)+"&start="+start+"&end="+end;
+  const response=await fetch(url,{cache:"no-store"});
+  if(!response.ok)throw Error("Historical candle API "+response.status);
+  const payload=await response.json();
+  if(payload.success===false)throw Error("Historical candle data request failed");
+  const batch=(payload.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}))
+   .filter(c=>Object.values(c).every(Number.isFinite)&&c.time<end&&c.time>=start);
+  batch.forEach(c=>collected.set(c.time,c));
+  if(batch.length<1900)break;
+  end=start;
+ }
+ const all=[...collected.values()].sort((a,b)=>a.time-b.time);
+ if(!all.length)throw Error("No historical candles returned");
+ historicalCandleCache.set(key,all);
+ return all;
+}
+async function fetchCandles(){return fetchAllHistoricalCandles(selected,timeframe)}
 let chartHasFit=false,livePriceLine=null;
 async function refreshChart(){
  if(chartBusy||!candleSeries)return;chartBusy=true;
@@ -882,8 +908,8 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   if(history.length>8)history.pop();
   const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")||kind.includes("TRAILING SL HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time;
-  const tradeKey=["DRP",scanSymbol,scanTimeframe,activeEntryTime].join(":");
-  const eventKey=["DRP",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
+  const tradeKey=["DRP2",scanSymbol,scanTimeframe,activeEntryTime].join(":");
+  const eventKey=["DRP2",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
   saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
  };
  const makePosition=(side,first,second,entry,time,stop)=>{
@@ -1235,7 +1261,7 @@ async function scanAllMarketsAndTimeframes(){
  backgroundScanBusy=true;
  try{
   const pair=strategyScanPairs[backgroundScanIndex++%strategyScanPairs.length];
-  const candles=await fetchCandlesFor(pair.symbol,pair.tf,240);
+  const candles=await fetchAllHistoricalCandles(pair.symbol,pair.tf);
   const now=Math.floor(Date.now()/1000),sec=tfSeconds[pair.tf];
   const closed=candles.filter(c=>c.time+sec<=now);
   if(closed.length>=2)runStrategy(closed,true,pair.symbol,pair.tf);
