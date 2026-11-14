@@ -297,6 +297,7 @@ const fmt=n=>Number.isFinite(Number(n))?Number(n).toLocaleString("en-US",{minimu
 const tfSeconds={"1m":60,"5m":300,"15m":900,"1h":3600,"2h":7200,"4h":14400,"1d":86400};
 const SUPABASE_URL="https://wxbclrvvqcfpanmuohlt.supabase.co",SUPABASE_KEY="sb_publishable_3BeMVDBkC0m6ls2BsGSSIA_m-iOQV_r";
 const tradeLogSeen=new Set();
+const tradeSavePromises=new Set();
 async function saveTradeEvent(ev){
  if(!ev||!ev.event_key||tradeLogSeen.has(ev.event_key))return;
  tradeLogSeen.add(ev.event_key);
@@ -396,19 +397,6 @@ async function loadTradeHistoryOriginal(){
    const close=ownEvents.find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
    const events=close?ownEvents.filter(e=>new Date(e.candle_time||e.occurred_at)<=new Date(close.candle_time||close.occurred_at)):ownEvents;
    trades.push([key,events]);
-  }
-  // Drop legacy/corrupt trade records whose saved entry/exit prices do not match that market's candles.
-  // Wait until the selected market/timeframe candle backfill is available; the final reload runs after backfill.
-  const candleData=historyCandleCache.get(coinFilter+"|"+tfFilter)||[];
-  if(candleData.length){
-   const candleLow=Math.min(...candleData.map(c=>c.low)),candleHigh=Math.max(...candleData.map(c=>c.high));
-   const plausiblePrice=v=>v==null||(v>=candleLow*0.5&&v<=candleHigh*2);
-   for(let i=trades.length-1;i>=0;i--){
-    const evs=trades[i][1],first=evs.find(e=>e.event_type==="ENTRY")||evs[0];
-    const close=[...evs].reverse().find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
-    const ep=journalNum(first.entry_price??first.price),xp=close?journalNum(close.exit_price??close.price):null;
-    if(!plausiblePrice(ep)||!plausiblePrice(xp))trades.splice(i,1);
-   }
   }
   // Collapse duplicate historical scans of the same signal, preferring the canonical DRP event stream.
   const uniqueTrades=new Map();
@@ -521,36 +509,65 @@ async function loadTradeHistory(){
  try{return await renderTradeHistory()}finally{historyLoadBusy=false}
 }
 const renderTradeHistory=loadTradeHistoryOriginal;
-async function backfillHistory30Days(){
- const coin=$("historySymbolFilter")?.value||"",tf=$("historyTimeframeFilter")?.value||"";
- if(!coin||!tf)return;
- const key=coin+"|"+tf;if(historyBackfillDone.has(key)||historyBackfillBusy.has(key))return;
+async function fetchAndReplayHistoryPair(coin,tf){
+ const key=coin+"|"+tf;
+ if(historyBackfillDone.has(key))return {key,skipped:true};
+ if(historyBackfillBusy.has(key))return {key,busy:true};
  historyBackfillBusy.add(key);
- $("historyConnection").textContent="Preparing last 30 days of "+coin+" "+tf+" candles…";
  try{
-  const sec=tfSeconds[tf],end=Math.floor(Date.now()/1000),start=end-30*86400,chunk=sec*1500,ranges=[];
+  const sec=tfSeconds[tf],now=Math.floor(Date.now()/1000);
+  const end=Math.floor(now/sec)*sec,start=Math.floor((now-30*86400)/sec)*sec;
+  const chunk=sec*1500,ranges=[];
   for(let from=start;from<end;from+=chunk)ranges.push([from,Math.min(end,from+chunk)]);
   const gathered=[];
-  for(let i=0;i<ranges.length;i+=3){
-   const batch=await Promise.all(ranges.slice(i,i+3).map(async ([from,to])=>{
+  for(let i=0;i<ranges.length;i+=2){
+   const batch=await Promise.all(ranges.slice(i,i+2).map(async ([from,to])=>{
     const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(coin)+"&start="+from+"&end="+to;
-    const response=await fetch(url,{cache:"no-store"});if(!response.ok)throw Error("Candle history "+response.status);
-    const json=await response.json();if(json.success===false)throw Error(json.error||"Candle history failed");
-    return (json.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite));
+    const response=await fetch(url,{cache:"no-store",headers:{Accept:"application/json"}});
+    if(!response.ok)throw Error(coin+" "+tf+" history HTTP "+response.status);
+    const json=await response.json();
+    if(json.success===false)throw Error(json.error||coin+" "+tf+" candle history failed");
+    return (json.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)}))
+     .filter(c=>Object.values(c).every(Number.isFinite)&&c.time>=from&&c.time<to&&c.high>=Math.max(c.open,c.close,c.low)&&c.low<=Math.min(c.open,c.close,c.high));
    }));
    batch.forEach(x=>gathered.push(...x));
   }
   const unique=[...new Map(gathered.sort((a,b)=>a.time-b.time).map(c=>[c.time,c])).values()];
+  if(!unique.length)throw Error("No real candles returned for "+coin+" "+tf);
+  const expected=Math.floor((end-start)/sec),coverage=unique.length/expected;
+  if(coverage<0.985)throw Error("Incomplete candle history for "+coin+" "+tf+" ("+unique.length+"/"+expected+")");
   historyCandleCache.set(key,unique);
-  const closed=unique.filter(c=>c.time+sec<=Math.floor(Date.now()/1000));
+  const closed=unique.filter(c=>c.time+sec<=now);
   if(closed.length>=2)runStrategy(closed,true,coin,tf);
+  while(tradeSavePromises.size)await Promise.all([...tradeSavePromises]);
   historyBackfillDone.add(key);
-  $("historyConnection").textContent="30-day scan complete · "+closed.length+" closed candles · syncing trade events…";
- }catch(e){$("historyConnection").textContent="30-day candle scan unavailable · "+e.message;console.error("30-day analytics backfill:",e)}
- finally{historyBackfillBusy.delete(key);loadTradeHistory()}
+  return {key,candles:closed.length,events:"synced"};
+ }finally{historyBackfillBusy.delete(key)}
+}
+let historyFullBackfillPromise=null;
+async function backfillHistory30Days(){
+ if(historyFullBackfillPromise)return historyFullBackfillPromise;
+ historyFullBackfillPromise=(async()=>{
+  const pairs=[];
+  for(const m of markets)for(const tf of Object.keys(tfSeconds))pairs.push([m.symbol,tf]);
+  let done=0,failed=[];
+  $("historyConnection").textContent="Fetching real 30-day candles · 0/"+pairs.length+" market/timeframes…";
+  for(const [coin,tf] of pairs){
+   try{
+    const result=await fetchAndReplayHistoryPair(coin,tf);
+    if(result?.candles)done++;
+   }catch(e){failed.push(coin+" "+tf+": "+e.message);console.error("30-day analytics backfill:",e)}
+   $("historyConnection").textContent="Real 30-day history · "+done+"/"+pairs.length+" complete"+(failed.length?" · "+failed.length+" failed":"");
+   if(($("historySymbolFilter")?.value||"")===coin&&($("historyTimeframeFilter")?.value||""))await loadTradeHistory();
+  }
+  if(failed.length)$("historyConnection").textContent="Backfill finished · "+done+"/"+pairs.length+" complete · "+failed.length+" failed. Tap Refresh to retry.";
+  else $("historyConnection").textContent="All 35 market/timeframes refreshed from Delta Exchange · last 30 days";
+  return {done,total:pairs.length,failed};
+ })().finally(()=>{historyFullBackfillPromise=null});
+ return historyFullBackfillPromise;
 }
 function onHistoryFilterChange(){persistPageState();backfillHistory30Days();loadTradeHistory()}
-$("historyRefresh")?.addEventListener("click",()=>{historyBackfillDone.delete(($("historySymbolFilter").value||"")+"|"+($("historyTimeframeFilter").value||""));backfillHistory30Days();loadTradeHistory()});
+$("historyRefresh")?.addEventListener("click",()=>{historyBackfillDone.clear();historyCandleCache.clear();backfillHistory30Days();loadTradeHistory()});
 $("historySymbolFilter")?.addEventListener("change",onHistoryFilterChange);
 $("historyTimeframeFilter")?.addEventListener("change",onHistoryFilterChange);
 $("tradeJournalOpen")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=false;loadTradeHistory();backfillHistory30Days();document.body.style.overflow="hidden";persistPageState()});
@@ -670,7 +687,8 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   const eventType=kind.includes("TRADE CLOSED")?"TRADE_CLOSED":kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time,tradeKey=["DRP",scanSymbol,scanTimeframe,activeEntryTime].join(":");
   const eventKey=["DRP",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
-  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
+  const pendingSave=saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
+  tradeSavePromises.add(pendingSave);pendingSave.finally(()=>tradeSavePromises.delete(pendingSave));
  };
  for(let i=1;i<candles.length;i++){
   const prev=candles[i-1],cur=candles[i];
