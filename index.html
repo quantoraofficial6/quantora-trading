@@ -279,7 +279,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 <footer class="footer"><span>QUANTORA TERMINAL · VERSION 1.0</span><span>For research and education only. Not financial advice.</span></footer>
 </div>
 
-<div class="journal-modal" id="tradeJournalModal" hidden><div class="journal-shell"><div class="journal-modal-head"><div><div class="history-trade-title">QUANTORA · TRADE ANALYTICS</div><div class="history-muted">Complete signal and trade-event history</div></div><button type="button" id="tradeJournalClose" class="journal-close">✕ Close</button></div>
+<div class="journal-modal" id="tradeJournalModal" hidden><div class="journal-shell"><div class="journal-modal-head"><div><div class="history-trade-title">QUANTORA · TRADE ANALYTICS</div><div class="history-muted">Dynamic Range Pro · Last 30 days · Auto refresh every second</div></div><button type="button" id="tradeJournalClose" class="journal-close">✕ Close</button></div>
 <section class="trade-history-panel" id="tradeHistoryPanel"><div class="trade-history-head"><div><h2>TRADE HISTORY</h2><div class="history-muted" id="historyConnection">Connected · automatic trade saving</div></div><div class="history-actions"><button type="button" id="historyRefresh">↻ Refresh</button></div></div><div class="history-filters"><div class="history-filter"><label for="historySymbolFilter">COIN / MARKET</label><select id="historySymbolFilter"><option value="" selected disabled>Select coin</option><option value="BTCUSD">BTC · Bitcoin</option><option value="ETHUSD">ETH · Ethereum</option><option value="SOLUSD">SOL · Solana</option><option value="XRPUSD">XRP</option><option value="XAUTUSD">GOLD · Tether Gold</option></select></div><div class="history-filter"><label for="historyTimeframeFilter">TIMEFRAME</label><select id="historyTimeframeFilter"><option value="" selected disabled>Select timeframe</option><option value="1m">1 Minute</option><option value="5m">5 Minutes</option><option value="15m">15 Minutes</option><option value="1h">1 Hour</option><option value="2h">2 Hours</option><option value="4h">4 Hours</option><option value="1d">1 Day</option></select></div></div><div class="history-stats" id="historyStats" hidden><span>TRADES: <b id="historyTradeCount">—</b></span><span>RUNNING: <b id="historyRunning">—</b></span><span>WINNING: <b id="historyWinning">—</b></span><span>LOSING: <b id="historyLosing">—</b></span><span>PROFIT POINTS: <b id="historyProfitPoints">—</b></span><span>LOSS POINTS: <b id="historyLossPoints">—</b></span><span>NET POINTS: <b id="historyNetPoints">—</b></span></div><div class="history-groups" id="historyRows" hidden><div class="history-muted">Select a coin and timeframe to view trade history.</div></div></section></div></div>
 <script>
 const API="https://api.india.delta.exchange";
@@ -329,7 +329,7 @@ function updateJournalLivePrices(){
   }
  });
 }
-async function loadTradeHistory(){
+async function loadTradeHistoryOriginal(){
  const refreshBtn=$("historyRefresh");
  if(refreshBtn){refreshBtn.disabled=true;refreshBtn.textContent="Loading…"}
  try{
@@ -345,17 +345,16 @@ async function loadTradeHistory(){
   if(statsPanel)statsPanel.hidden=false;
   if(rowsPanel)rowsPanel.hidden=false;
   const allRows=[];let offset=0,batchSize=1000;
+  const since=new Date(Date.now()-30*24*60*60*1000).toISOString();
   while(true){
-   let url=SUPABASE_URL+"/rest/v1/trade_history_events?select=*&order=candle_time.desc,id.desc&limit="+batchSize+"&offset="+offset;
-   const r=await fetch(url,{headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Prefer:"count=none"}});
+   const params="select=*&symbol=eq."+encodeURIComponent(coinFilter)+"&timeframe=eq."+encodeURIComponent(tfFilter)+"&strategy=eq."+encodeURIComponent("Dynamic Range Pro")+"&candle_time=gte."+encodeURIComponent(since)+"&order=candle_time.desc,id.desc&limit="+batchSize+"&offset="+offset;
+   const url=SUPABASE_URL+"/rest/v1/trade_history_events?"+params;
+   const r=await fetch(url,{cache:"no-store",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Prefer:"count=none"}});
    if(!r.ok)throw Error("History load "+r.status+" "+(await r.text()).slice(0,160));
    const batch=await r.json();allRows.push(...batch);if(batch.length<batchSize)break;offset+=batchSize;
   }
-  const rows=allRows.filter(x=>
-   String(x.symbol||"").trim().toUpperCase()===coinFilter.trim().toUpperCase()&&
-   String(x.timeframe||"").trim().toLowerCase()===tfFilter.trim().toLowerCase()
-  );
-  $("historyConnection").textContent="Connected · trade history ready";
+  const rows=allRows;
+  $("historyConnection").textContent="Connected · last 30 days · refreshed "+new Date().toLocaleTimeString();
   // Legacy counters are not present in the current premium Journal layout.
   // Keep this compatibility-safe so missing optional elements cannot stop history rendering.
   if($("historyTotal"))$("historyTotal").textContent=rows.length;
@@ -427,7 +426,7 @@ async function loadTradeHistory(){
    events.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at));
    const entryEvent=events.find(e=>e.event_type==="ENTRY")||events[0],last=events[events.length-1];
    const entryAt=entryEvent.entry_time||entryEvent.candle_time||entryEvent.occurred_at;
-   const stopEvent=[...events].reverse().find(e=>e.event_type==="STOP_LOSS_HIT");
+   const stopEvent=[...events].reverse().find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
    const isClosed=!!stopEvent;
    const tradePoints=journalTradePoints(events,entryEvent);
    const status=isClosed?(tradePoints!=null&&tradePoints>=0?"CLOSED · PROFIT":"CLOSED · LOSS"):events.some(e=>e.event_type==="TARGET_HIT")?"TARGET HIT · TRAILING":last.status||"RUNNING";
@@ -487,10 +486,45 @@ $("historyRows")?.addEventListener("input",e=>{
  pctEl.textContent=pct==null?"—":(pct>0?"+":"")+pct.toFixed(2)+"%";pctEl.className=pct==null?"":pct>=0?"positive":"negative";
 });
 
-$("historyRefresh")?.addEventListener("click",loadTradeHistory);
-$("historySymbolFilter")?.addEventListener("change",loadTradeHistory);
-$("historyTimeframeFilter")?.addEventListener("change",loadTradeHistory);
-$("tradeJournalOpen")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=false;loadTradeHistory();document.body.style.overflow="hidden"});
+let historyLoadBusy=false,historyBackfillBusy=new Set(),historyBackfillDone=new Set();
+async function loadTradeHistory(){
+ if(historyLoadBusy||$("tradeJournalModal").hidden)return;
+ historyLoadBusy=true;
+ try{return await renderTradeHistory()}finally{historyLoadBusy=false}
+}
+const renderTradeHistory=loadTradeHistoryOriginal;
+async function backfillHistory30Days(){
+ const coin=$("historySymbolFilter")?.value||"",tf=$("historyTimeframeFilter")?.value||"";
+ if(!coin||!tf)return;
+ const key=coin+"|"+tf;if(historyBackfillDone.has(key)||historyBackfillBusy.has(key))return;
+ historyBackfillBusy.add(key);
+ $("historyConnection").textContent="Preparing last 30 days of "+coin+" "+tf+" candles…";
+ try{
+  const sec=tfSeconds[tf],end=Math.floor(Date.now()/1000),start=end-30*86400,chunk=sec*1500,ranges=[];
+  for(let from=start;from<end;from+=chunk)ranges.push([from,Math.min(end,from+chunk)]);
+  const gathered=[];
+  for(let i=0;i<ranges.length;i+=3){
+   const batch=await Promise.all(ranges.slice(i,i+3).map(async ([from,to])=>{
+    const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(coin)+"&start="+from+"&end="+to;
+    const response=await fetch(url,{cache:"no-store"});if(!response.ok)throw Error("Candle history "+response.status);
+    const json=await response.json();if(json.success===false)throw Error(json.error||"Candle history failed");
+    return (json.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite));
+   }));
+   batch.forEach(x=>gathered.push(...x));
+  }
+  const unique=[...new Map(gathered.sort((a,b)=>a.time-b.time).map(c=>[c.time,c])).values()];
+  const closed=unique.filter(c=>c.time+sec<=Math.floor(Date.now()/1000));
+  if(closed.length>=2)runStrategy(closed,true,coin,tf);
+  historyBackfillDone.add(key);
+  $("historyConnection").textContent="30-day scan complete · "+closed.length+" closed candles · syncing trade events…";
+ }catch(e){$("historyConnection").textContent="30-day candle scan unavailable · "+e.message;console.error("30-day analytics backfill:",e)}
+ finally{historyBackfillBusy.delete(key);loadTradeHistory()}
+}
+function onHistoryFilterChange(){persistPageState();backfillHistory30Days();loadTradeHistory()}
+$("historyRefresh")?.addEventListener("click",()=>{historyBackfillDone.delete(($("historySymbolFilter").value||"")+"|"+($("historyTimeframeFilter").value||""));backfillHistory30Days();loadTradeHistory()});
+$("historySymbolFilter")?.addEventListener("change",onHistoryFilterChange);
+$("historyTimeframeFilter")?.addEventListener("change",onHistoryFilterChange);
+$("tradeJournalOpen")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=false;loadTradeHistory();backfillHistory30Days();document.body.style.overflow="hidden";persistPageState()});
 $("tradeJournalClose")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=true;document.body.style.overflow=""});
 $("tradeJournalModal")?.addEventListener("click",e=>{if(e.target===$("tradeJournalModal")){$("tradeJournalModal").hidden=true;document.body.style.overflow=""}});
 
@@ -604,7 +638,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
  const history=[];let pos=null,lastEvent=null;
  const pushEvent=(side,kind,price,time,detail)=>{
   history.unshift({side,kind,price,time,detail});if(history.length>8)history.pop();
-  const eventType=kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
+  const eventType=kind.includes("TRADE CLOSED")?"TRADE_CLOSED":kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time,tradeKey=["DRP",scanSymbol,scanTimeframe,activeEntryTime].join(":");
   const eventKey=["DRP",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
   saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
@@ -614,7 +648,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   if(pos){
    if(pos.side==="BUY"){
     if(cur.close<pos.rangeLow){
-     pushEvent("BUY","BUY RANGE BROKEN · SELL REVERSAL",cur.close,cur.time,"Candle closed below the complete active range.");
+     pushEvent("BUY","BUY TRADE CLOSED · RANGE REVERSAL",cur.close,cur.time,"BUY closed because candle closed below the complete active range.");
      const c1=pos.c1.low<=pos.c2.low?pos.c1:pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=c1.high,risk=sl-cur.close;
      pos=risk>0?{side:"SELL",entry:cur.close,sl,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false}:null;
      if(pos)pushEvent("SELL","SELL ENTRY · RANGE REVERSAL",cur.close,cur.time,"Previous C1/C2 candle with lower Low selected as new C1; breakdown candle is new C2.");
@@ -629,7 +663,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
     }
    }else{
     if(cur.close>pos.rangeHigh){
-     pushEvent("SELL","SELL RANGE BROKEN · BUY REVERSAL",cur.close,cur.time,"Candle closed above the complete active range.");
+     pushEvent("SELL","SELL TRADE CLOSED · RANGE REVERSAL",cur.close,cur.time,"SELL closed because candle closed above the complete active range.");
      const c1=pos.c1.high>=pos.c2.high?pos.c1:pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=c1.low,risk=cur.close-sl;
      pos=risk>0?{side:"BUY",entry:cur.close,sl,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false}:null;
      if(pos)pushEvent("BUY","BUY ENTRY · RANGE REVERSAL",cur.close,cur.time,"Previous C1/C2 candle with higher High selected as new C1; breakout candle is new C2.");
@@ -931,12 +965,39 @@ async function scanAllMarketsAndTimeframes(){
  finally{backgroundScanBusy=false}
 }
 
+const PAGE_STATE_KEY="quantora_page_state_v1";
+function persistPageState(){
+ try{sessionStorage.setItem(PAGE_STATE_KEY,JSON.stringify({view:$("liquidityView").hidden?"classic":"liquidity",journalOpen:!$("tradeJournalModal").hidden,scrollY:window.scrollY,selected,timeframe,liqSelected,liqDayMode,coin:$("historySymbolFilter")?.value||"",tf:$("historyTimeframeFilter")?.value||""}))}catch(_){}
+}
+function restorePageState(){
+ try{
+  const st=JSON.parse(sessionStorage.getItem(PAGE_STATE_KEY)||"null");if(!st)return;
+  if(markets.some(m=>m.symbol===st.selected))selected=st.selected;
+  if(tfSeconds[st.timeframe])timeframe=st.timeframe;
+  if(markets.some(m=>m.symbol===st.liqSelected))liqSelected=st.liqSelected;
+  if(st.liqDayMode==="UTC"||st.liqDayMode==="IST")liqDayMode=st.liqDayMode;
+  if(st.coin&&$("historySymbolFilter").querySelector('option[value="'+st.coin+'"]'))$("historySymbolFilter").value=st.coin;
+  if(st.tf&&tfSeconds[st.tf])$("historyTimeframeFilter").value=st.tf;
+  document.querySelectorAll("#timeframes [data-tf]").forEach(b=>b.classList.toggle("active",b.dataset.tf===timeframe));
+  if(st.view==="liquidity")showStrategy("liquidity");
+  if(st.journalOpen){$("tradeJournalModal").hidden=false;document.body.style.overflow="hidden"}
+  requestAnimationFrame(()=>window.scrollTo(0,Number(st.scrollY)||0));
+ }catch(_){}
+}
+let pageStateSaveTimer=null;
+window.addEventListener("beforeunload",persistPageState);window.addEventListener("pagehide",persistPageState);
+window.addEventListener("scroll",()=>{if(pageStateSaveTimer)clearTimeout(pageStateSaveTimer);pageStateSaveTimer=setTimeout(persistPageState,250)},{passive:true});
+$("tradeJournalClose")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=true;document.body.style.overflow="";persistPageState()});
+$("tradeJournalModal")?.addEventListener("click",e=>{if(e.target===$("tradeJournalModal")){$("tradeJournalModal").hidden=true;document.body.style.overflow="";persistPageState()}});
+$("classicTab")?.addEventListener("click",persistPageState);$("liquidityTab")?.addEventListener("click",persistPageState);
 async function start(){
- tickClock();setInterval(tickClock,1000);initChart();loadTradeHistory();setInterval(loadTradeHistory,300000);
+ tickClock();setInterval(tickClock,1000);initChart();
  await Promise.allSettled([refreshTickers(),refreshChart()]);
  setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,1500);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},5000);
+ if(!$("tradeJournalModal").hidden){loadTradeHistory();backfillHistory30Days()}
+ setInterval(()=>{if(!$("tradeJournalModal").hidden)loadTradeHistory()},1000);
 }
-start();
+restorePageState();start();
 </script>
 </body>
 </html>
