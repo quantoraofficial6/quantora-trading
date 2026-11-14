@@ -730,7 +730,7 @@ async function loadTradeHistory(){
    const liveTradePct=livePoints==null||entry<=0?null:livePoints/entry*100;
    const displayPoints=isClosed?points:livePoints,displayPct=isClosed?pct:liveTradePct,displayPrice=isClosed?exit:live;
    const liveLine='<div class="journal-live-price" data-live-symbol="'+entryEvent.symbol+'" data-entry="'+(entry??"")+'" data-side="'+entryEvent.side+'" data-closed="'+(isClosed?"true":"false")+'">'+(isClosed?"EXIT PRICE · ":"LIVE PRICE · ")+(Number.isFinite(displayPrice)?fmt(displayPrice):"—")+' <span data-live-percent class="'+(displayPct==null?"":displayPct>=0?"positive":"negative")+'">'+(displayPct==null?"":(displayPct>0?"+":"")+displayPct.toFixed(2)+"%")+'</span><span data-live-points class="'+(displayPoints==null?"":displayPoints>=0?"positive":"negative")+'">'+(displayPoints==null?"":fmtSigned(displayPoints)+" pts")+'</span></div>';
-   const extremeEvent=[...events].reverse().find(e=>e.event_type==="TRADE_EXTREMES");
+   const extremeEvent=events.find(e=>e.event_type==="TRADE_EXTREMES");
    // Supabase may return the JSON metadata column as either an object or serialized text.
    // The close event already stores both excursion values, so no extra event row is required.
    const extremeMeta=journalMetadata(extremeEvent?.metadata??stopEvent?.metadata);
@@ -1001,8 +1001,8 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   }
   saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata});
   if(eventType==="STOP_LOSS_HIT"&&pos){
-   const extremesKey=["DRP3","EXT",scanSymbol,scanTimeframe,activeEntryTime,time,"CLOSE"].join(":");
-   saveTradeEvent({event_key:extremesKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:"TRADE_EXTREMES",status:"CLOSED",price,entry_price:pos.entry,exit_price:price,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:"Final maximum favorable/adverse movement from entry to close.",metadata:{max_favorable_points:Number(pos.maxFavorablePoints||0),max_adverse_points:Number(pos.maxAdversePoints||0)}});
+   const extremesKey=eventKey+":EXTREMES";
+   saveTradeEvent({event_key:extremesKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:"TRADE_EXTREMES",status:"CLOSED",price,entry_price:pos.entry,exit_price:price,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:"Maximum favorable and adverse movement during the closed trade.",metadata:{max_favorable_points:Number(pos.maxFavorablePoints||0),max_adverse_points:Number(pos.maxAdversePoints||0)}});
   }
  };
  const makePosition=(side,first,second,entry,time,stop)=>{
@@ -1016,14 +1016,8 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   if(pos){
    const favorable=pos.side==="BUY"?cur.high-pos.entry:pos.entry-cur.low;
    const adverse=pos.side==="BUY"?cur.low-pos.entry:pos.entry-cur.high;
-   const priorFavorable=Number(pos.maxFavorablePoints??0),priorAdverse=Number(pos.maxAdversePoints??0);
-   pos.maxFavorablePoints=Math.max(priorFavorable,favorable);
-   pos.maxAdversePoints=Math.min(priorAdverse,adverse);
-   // Persist only when a new trade extreme is made; compact event keys satisfy the public INSERT policy.
-   if(pos.maxFavorablePoints>priorFavorable||pos.maxAdversePoints<priorAdverse){
-    const extremeTime=Number(cur.time),extremeKey=["DRP3","EXT",scanSymbol,scanTimeframe,pos.entryTime,extremeTime].join(":");
-    saveTradeEvent({event_key:extremeKey,trade_key:["DRP3",scanSymbol,scanTimeframe,pos.entryTime].join(":"),strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side:pos.side,event_type:"TRADE_EXTREMES",status:"ACTIVE",price:cur.close,entry_price:pos.entry,exit_price:null,entry_time:new Date(pos.entryTime*1000).toISOString(),candle_time:new Date(extremeTime*1000).toISOString(),details:"Running maximum favorable/adverse movement from entry.",metadata:{max_favorable_points:Number(pos.maxFavorablePoints),max_adverse_points:Number(pos.maxAdversePoints)}});
-   }
+   pos.maxFavorablePoints=Math.max(pos.maxFavorablePoints??0,favorable);
+   pos.maxAdversePoints=Math.min(pos.maxAdversePoints??0,adverse);
    if(pos.side==="BUY"){
     // A close below the complete active two-candle range reverses BUY to SELL.
     if(cur.close<pos.rangeLow){
