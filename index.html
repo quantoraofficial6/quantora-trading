@@ -573,19 +573,14 @@ function journalTradePoints(events,entryEvent){const close=[...events].reverse()
 function formatJournalTime(value,full=false){return new Date(value).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",dateStyle:full?"full":"medium",timeStyle:"medium",hour12:true})}
 function updateJournalLivePrices(){
  document.querySelectorAll(".journal-live-price[data-live-symbol]").forEach(el=>{
+  if(el.dataset.closed==="true")return;
   const symbol=el.dataset.liveSymbol,entry=Number(el.dataset.entry),live=marketData[symbol]?.price,side=el.dataset.side;
   const raw=entry>0&&Number.isFinite(live)?(side==="SELL"?entry-live:live-entry):null;
   const pct=raw==null||entry<=0?null:raw/entry*100;
   const percentEl=el.querySelector("[data-live-percent]"),pointsEl=el.querySelector("[data-live-points]");
   el.childNodes[0].textContent="LIVE PRICE · "+(Number.isFinite(live)?fmt(live):"—")+" ";
-  if(percentEl){
-   percentEl.textContent=pct==null?"":(pct>0?"+":"")+pct.toFixed(2)+"%";
-   percentEl.className=pct==null?"":pct>=0?"positive":"negative";
-  }
-  if(pointsEl){
-   pointsEl.textContent=raw==null?"":fmtSigned(raw)+" pts";
-   pointsEl.className=raw==null?"":raw>=0?"positive":"negative";
-  }
+  if(percentEl){percentEl.textContent=pct==null?"":(pct>0?"+":"")+pct.toFixed(2)+"%";percentEl.className=pct==null?"":pct>=0?"positive":"negative";}
+  if(pointsEl){pointsEl.textContent=raw==null?"":fmtSigned(raw)+" pts";pointsEl.className=raw==null?"":raw>=0?"positive":"negative";}
  });
 }
 async function loadTradeHistory(){
@@ -723,7 +718,8 @@ async function loadTradeHistory(){
    const livePct=entry!=null&&entry>0&&Number.isFinite(live)?(live-entry)/entry*100:null;
    const livePoints=entry!=null&&Number.isFinite(live)?(entryEvent.side==="SELL"?entry-live:live-entry):null;
    const liveTradePct=livePoints==null||entry<=0?null:livePoints/entry*100;
-   const liveLine='<div class="journal-live-price" data-live-symbol="'+entryEvent.symbol+'" data-entry="'+(entry??"")+'" data-side="'+entryEvent.side+'">LIVE PRICE · '+(Number.isFinite(live)?fmt(live):"—")+' <span data-live-percent class="'+(liveTradePct==null?"":liveTradePct>=0?"positive":"negative")+'">'+(liveTradePct==null?"":(liveTradePct>0?"+":"")+liveTradePct.toFixed(2)+"%")+'</span><span data-live-points class="'+(livePoints==null?"":livePoints>=0?"positive":"negative")+'">'+(livePoints==null?"":fmtSigned(livePoints)+" pts")+'</span></div>';
+   const displayPoints=isClosed?points:livePoints,displayPct=isClosed?pct:liveTradePct,displayPrice=isClosed?exit:live;
+   const liveLine='<div class="journal-live-price" data-live-symbol="'+entryEvent.symbol+'" data-entry="'+(entry??"")+'" data-side="'+entryEvent.side+'" data-closed="'+(isClosed?"true":"false")+'">'+(isClosed?"EXIT PRICE · ":"LIVE PRICE · ")+(Number.isFinite(displayPrice)?fmt(displayPrice):"—")+' <span data-live-percent class="'+(displayPct==null?"":displayPct>=0?"positive":"negative")+'">'+(displayPct==null?"":(displayPct>0?"+":"")+displayPct.toFixed(2)+"%")+'</span><span data-live-points class="'+(displayPoints==null?"":displayPoints>=0?"positive":"negative")+'">'+(displayPoints==null?"":fmtSigned(displayPoints)+" pts")+'</span></div>';
    return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div>'+liveLine+'</div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
   }).join(""):'<div class="history-muted">No trades match these filters.</div>';
  }catch(e){const message=e&&e.message?e.message:"Unknown database error";$("historyConnection").textContent="Database unavailable · "+message;$("historyRows").innerHTML='<div class="history-muted">Could not load history. '+message+'</div>';console.error("Trade history load:",e)}
