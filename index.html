@@ -544,7 +544,7 @@ async function flushTradeEventQueue(){
  const batch=[...tradeEventQueue.values()].slice(0,100);
  batch.forEach(e=>tradeEventQueue.delete(e.event_key));
  try{
-  const r=await fetchWithTimeout(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(batch)},20000);
+  const r=await fetchWithTimeout(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(batch)},20000);
   if(!r.ok)throw Error("DB batch write "+r.status+" "+(await r.text()).slice(0,180));
  }catch(e){
   batch.forEach(ev=>{if(!tradeEventQueue.has(ev.event_key))tradeEventQueue.set(ev.event_key,ev)});
