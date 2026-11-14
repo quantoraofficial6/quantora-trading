@@ -518,7 +518,15 @@ let historyLoadBusy=false,historyBackfillBusy=new Set(),historyBackfillDone=new 
 async function loadTradeHistory(){
  if(historyLoadBusy||$("tradeJournalModal").hidden)return;
  historyLoadBusy=true;
- try{return await renderTradeHistory()}finally{historyLoadBusy=false}
+ try{
+  const coin=$("historySymbolFilter")?.value||"",tf=$("historyTimeframeFilter")?.value||"";
+  if(coin&&tf){
+   const key=coin+"|"+tf;
+   while(historyBackfillBusy.has(key))await new Promise(resolve=>setTimeout(resolve,100));
+   if(!historyCandleCache.has(key))await fetchAndReplayHistoryPair(coin,tf);
+  }
+  return await renderTradeHistory();
+ }finally{historyLoadBusy=false}
 }
 const renderTradeHistory=loadTradeHistoryOriginal;
 async function fetchAndReplayHistoryPair(coin,tf){
