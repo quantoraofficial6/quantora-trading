@@ -317,16 +317,19 @@ function saveJournalQuantity(key,value){
 function journalNum(v){const n=Number(v);return Number.isFinite(n)?n:null}
 const historyCandleCache=new Map();
 function journalTradeExtremes(events,entryEvent,closeEvent){
- const symbol=entryEvent.symbol,tf=entryEvent.timeframe;
+ const symbol=entryEvent.symbol,tf=entryEvent.timeframe,sec=tfSeconds[tf]||0;
  const candles=historyCandleCache.get(symbol+"|"+tf)||[];
- const start=Math.floor(new Date(entryEvent.entry_time||entryEvent.candle_time||entryEvent.occurred_at).getTime()/1000);
- const end=closeEvent?Math.floor(new Date(closeEvent.candle_time||closeEvent.occurred_at).getTime()/1000):Math.floor(Date.now()/1000);
+ const toSeconds=value=>{const n=typeof value==="number"?value:Date.parse(value);return Number.isFinite(n)?Math.floor(n>1e12?n/1000:n):NaN};
+ const start=toSeconds(entryEvent.entry_time||entryEvent.candle_time||entryEvent.occurred_at);
+ const end=closeEvent?toSeconds(closeEvent.candle_time||closeEvent.occurred_at):Math.floor(Date.now()/1000);
  if(!Number.isFinite(start)||!Number.isFinite(end)||!candles.length)return null;
- const span=candles.filter(c=>c.time>=start&&c.time<=end);
+ // Candle timestamps mark candle open; include the candle spanning the entry and exit timestamps.
+ const span=candles.filter(c=>{const t=toSeconds(c.time);return Number.isFinite(t)&&t<=end&&t+(sec||0)>=start});
  if(!span.length)return null;
- let high=Math.max(...span.map(c=>c.high)),low=Math.min(...span.map(c=>c.low));
+ let high=Math.max(...span.map(c=>Number(c.high)).filter(Number.isFinite)),low=Math.min(...span.map(c=>Number(c.low)).filter(Number.isFinite));
+ if(!Number.isFinite(high)||!Number.isFinite(low))return null;
  if(!closeEvent){
-  const live=marketData[symbol]?.price;
+  const live=Number(marketData[symbol]?.price);
   if(Number.isFinite(live)){high=Math.max(high,live);low=Math.min(low,live)}
  }
  const entry=journalNum(entryEvent.entry_price??entryEvent.price);
@@ -571,6 +574,7 @@ async function backfillHistory30Days(){
   }
   if(failed.length)$("historyConnection").textContent="Backfill finished · "+done+"/"+pairs.length+" complete · "+failed.length+" failed. Tap Refresh to retry.";
   else $("historyConnection").textContent="All 35 market/timeframes refreshed from Delta Exchange · last 30 days";
+  await loadTradeHistory();
   return {done,total:pairs.length,failed};
  })().finally(()=>{historyFullBackfillPromise=null});
  return historyFullBackfillPromise;
