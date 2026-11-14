@@ -380,37 +380,45 @@ async function loadTradeHistoryOriginal(){
   if($("historyEntries"))$("historyEntries").textContent=rows.filter(x=>x.event_type==="ENTRY").length;
   if($("historyTargets"))$("historyTargets").textContent=rows.filter(x=>x.event_type==="TARGET_HIT").length;
   if($("historyStops"))$("historyStops").textContent=rows.filter(x=>x.event_type==="STOP_LOSS_HIT").length;
-  // Rebuild journal trades from the chronological event stream instead of trusting legacy trade_key groups.
-  // Repeated scans can leave duplicate ENTRY rows under different keys; one strategy can only hold one position per market/timeframe.
-  const streams=new Map();
+  // Rebuild each trade strictly from its own trade_key. Never pair a close event from another trade.
+  const tradeGroups=new Map();
   rows.forEach(e=>{
-   const streamKey=[e.strategy,e.symbol,e.timeframe].join("|");
-   if(!streams.has(streamKey))streams.set(streamKey,[]);
-   streams.get(streamKey).push(e);
+   const key=e.trade_key||e.event_key;
+   if(!tradeGroups.has(key))tradeGroups.set(key,[]);
+   tradeGroups.get(key).push(e);
   });
   const trades=[];
-  for(const [streamKey,streamEvents] of streams){
-   const priority=e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED"?0:e.event_type==="ENTRY"?1:2;
-   streamEvents.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at)||priority(a)-priority(b)||Number(a.id||0)-Number(b.id||0));
-   let activeTrade=null;
-   for(const e of streamEvents){
-    if(e.event_type==="ENTRY"){
-     if(!activeTrade)activeTrade={key:e.trade_key||e.event_key,side:e.side,events:[e]};
-     // Ignore overlapping duplicate entries from another historical scan until the open trade closes.
-     continue;
-    }
-    if(e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED"){
-     if(activeTrade&&activeTrade.side===e.side){
-      activeTrade.events.push(e);
-      trades.push([activeTrade.key,activeTrade.events]);
-      activeTrade=null;
-     }
-     continue;
-    }
-    if(activeTrade&&activeTrade.side===e.side&&(e.trade_key||e.event_key)===activeTrade.key)activeTrade.events.push(e);
-   }
-   if(activeTrade)trades.push([activeTrade.key,activeTrade.events]);
+  for(const [key,group] of tradeGroups){
+   group.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at)||Number(a.id||0)-Number(b.id||0));
+   const entryEvent=group.find(e=>e.event_type==="ENTRY");
+   if(!entryEvent)continue;
+   const ownEvents=group.filter(e=>e.side===entryEvent.side);
+   const close=ownEvents.find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
+   const events=close?ownEvents.filter(e=>new Date(e.candle_time||e.occurred_at)<=new Date(close.candle_time||close.occurred_at)):ownEvents;
+   trades.push([key,events]);
   }
+  // Drop legacy/corrupt trade records whose saved entry/exit prices do not match that market's candles.
+  // Wait until the selected market/timeframe candle backfill is available; the final reload runs after backfill.
+  const candleData=historyCandleCache.get(coinFilter+"|"+tfFilter)||[];
+  if(candleData.length){
+   const candleLow=Math.min(...candleData.map(c=>c.low)),candleHigh=Math.max(...candleData.map(c=>c.high));
+   const plausiblePrice=v=>v==null||(v>=candleLow*0.5&&v<=candleHigh*2);
+   for(let i=trades.length-1;i>=0;i--){
+    const evs=trades[i][1],first=evs.find(e=>e.event_type==="ENTRY")||evs[0];
+    const close=[...evs].reverse().find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
+    const ep=journalNum(first.entry_price??first.price),xp=close?journalNum(close.exit_price??close.price):null;
+    if(!plausiblePrice(ep)||!plausiblePrice(xp))trades.splice(i,1);
+   }
+  }
+  // Collapse duplicate historical scans of the same signal, preferring the canonical DRP event stream.
+  const uniqueTrades=new Map();
+  for(const item of trades){
+   const evs=item[1],entry=evs.find(e=>e.event_type==="ENTRY")||evs[0];
+   const dedupeKey=[entry.symbol,entry.timeframe,entry.side,entry.entry_time||entry.candle_time,entry.entry_price??entry.price].join("|");
+   const old=uniqueTrades.get(dedupeKey);
+   if(!old||String(item[0]).startsWith("DRP:")&&!String(old[0]).startsWith("DRP:"))uniqueTrades.set(dedupeKey,item);
+  }
+  trades.splice(0,trades.length,...uniqueTrades.values());
   trades.sort((a,b)=>{
    const terminal=events=>events.some(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
    const activeA=!terminal(a[1]),activeB=!terminal(b[1]);
