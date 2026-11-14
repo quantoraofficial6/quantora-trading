@@ -948,7 +948,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   const activeEntryTime=pos?.entryTime??time;
   const tradeKey=["DRP3",scanSymbol,scanTimeframe,activeEntryTime].join(":");
   const eventKey=["DRP3",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
-  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
+  try{saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}})}catch(e){console.warn("Trade event save skipped; signal display continues:",e)}
  };
  const makePosition=(side,first,second,entry,time,stop)=>{
   const rangeHigh=Math.max(first.high,second.high),rangeLow=Math.min(first.low,second.low);
@@ -1020,6 +1020,8 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   }
  }
  if(!silent){
+  const feedEvents=history.length?history:(pos?[{side:pos.side,kind:pos.side+" ENTRY",price:pos.entry,time:pos.entryTime,detail:"Active trade · entry confirmed.",entryPrice:pos.entry,points:0}]:[]);
+  $("signalFeed").innerHTML=feedEvents.length?feedEvents.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'<small class="feed-points '+(e.points>=0?"positive":"negative")+'">'+fmtSigned(e.points)+" pts"+'</small></div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
   clearStrategyLines();
   if(pos){
    const isBuy=pos.side==="BUY";
@@ -1036,8 +1038,6 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
    $("signalReason").textContent="Waiting for a candle to close beyond the previous candle's high or low.";
    $("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";
   }
-  const feedEvents=history.length?history:(pos?[{side:pos.side,kind:pos.side+" ENTRY",price:pos.entry,time:pos.entryTime,detail:"Active trade · entry confirmed.",entryPrice:pos.entry,points:0}]:[]);
-  $("signalFeed").innerHTML=feedEvents.length?feedEvents.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'<small class="feed-points '+(e.points>=0?"positive":"negative")+'">'+fmtSigned(e.points)+" pts"+'</small></div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
  }
 }
 function updateStructure(c){
