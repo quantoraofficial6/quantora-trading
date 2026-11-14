@@ -861,7 +861,7 @@ function initChart(){
  }
 
 async function fetchAllTickers(){
- const r=await fetch(API+"/v2/tickers?contract_types=perpetual_futures",{cache:"no-store",headers:{Accept:"application/json"}});
+ const r=await fetchWithTimeout(API+"/v2/tickers?contract_types=perpetual_futures",{cache:"no-store",headers:{Accept:"application/json"}},10000);
  if(!r.ok)throw Error("Ticker API HTTP "+r.status);
  const j=await r.json();
  if(j.success===false)throw Error(j.error||"Ticker API returned an error");
@@ -878,7 +878,7 @@ async function fetchAllTickers(){
  return map;
 }
 async function fetchTicker(m){
- const r=await fetch(API+"/v2/tickers/"+encodeURIComponent(m),{cache:"no-store",headers:{Accept:"application/json"}});
+ const r=await fetchWithTimeout(API+"/v2/tickers/"+encodeURIComponent(m),{cache:"no-store",headers:{Accept:"application/json"}},10000);
  if(!r.ok)throw Error(m+" ticker HTTP "+r.status);
  const j=await r.json(),t=Array.isArray(j.result)?j.result[0]:j.result;
  if(!t)throw Error(m+" ticker unavailable");
@@ -916,7 +916,7 @@ async function refreshTickers(){
 async function fetchCandlesFor(symbol,tf,limit=240){
  const sec=tfSeconds[tf],end=Math.floor(Date.now()/1000),start=end-sec*limit;
  const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(symbol)+"&start="+start+"&end="+end;
- const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("Candle API "+r.status);
+ const r=await fetchWithTimeout(url,{cache:"no-store"},12000);if(!r.ok)throw Error("Candle API "+r.status);
  const j=await r.json();if(j.success===false)throw Error("Candle data request failed");
  return (j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time).filter((c,i,a)=>!i||c.time!==a[i-1].time);
 }
