@@ -544,7 +544,7 @@ async function flushTradeEventQueue(){
  const batch=[...tradeEventQueue.values()].slice(0,100);
  batch.forEach(e=>tradeEventQueue.delete(e.event_key));
  try{
-  const r=await fetchWithTimeout(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(batch)},20000);
+  const r=await fetchWithTimeout(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify(batch)},20000);
   if(!r.ok)throw Error("DB batch write "+r.status+" "+(await r.text()).slice(0,180));
  }catch(e){
   batch.forEach(ev=>{if(!tradeEventQueue.has(ev.event_key))tradeEventQueue.set(ev.event_key,ev)});
@@ -720,7 +720,8 @@ async function loadTradeHistory(){
    const liveTradePct=livePoints==null||entry<=0?null:livePoints/entry*100;
    const displayPoints=isClosed?points:livePoints,displayPct=isClosed?pct:liveTradePct,displayPrice=isClosed?exit:live;
    const liveLine='<div class="journal-live-price" data-live-symbol="'+entryEvent.symbol+'" data-entry="'+(entry??"")+'" data-side="'+entryEvent.side+'" data-closed="'+(isClosed?"true":"false")+'">'+(isClosed?"EXIT PRICE · ":"LIVE PRICE · ")+(Number.isFinite(displayPrice)?fmt(displayPrice):"—")+' <span data-live-percent class="'+(displayPct==null?"":displayPct>=0?"positive":"negative")+'">'+(displayPct==null?"":(displayPct>0?"+":"")+displayPct.toFixed(2)+"%")+'</span><span data-live-points class="'+(displayPoints==null?"":displayPoints>=0?"positive":"negative")+'">'+(displayPoints==null?"":fmtSigned(displayPoints)+" pts")+'</span></div>';
-   return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div>'+liveLine+'</div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
+   const excursion= isClosed&&stopEvent?.metadata&&Number.isFinite(Number(stopEvent.metadata.max_favorable_points))&&Number.isFinite(Number(stopEvent.metadata.max_adverse_points))?'<div class="history-muted" style="margin-top:5px;font-size:12px">TRADE HIGH <b class="positive">'+fmtSigned(Number(stopEvent.metadata.max_favorable_points))+' pts</b> · TRADE LOW <b class="negative">'+fmtSigned(Number(stopEvent.metadata.max_adverse_points))+' pts</b></div>':"";
+   return '<article class="history-trade"><div class="history-trade-head"><div><div class="history-trade-title">'+entryEvent.symbol+' · '+entryEvent.side+' · '+entryEvent.strategy+'</div><div class="history-trade-meta">'+entryEvent.timeframe+' · Trade opened: '+entryTimeText+'</div>'+liveLine+excursion+'</div><div class="history-trade-meta">'+events.length+' updates · '+status+'</div></div><div class="history-levels"><div class="history-level"><small>ENTRY PRICE</small><b>'+fmt(entry)+'</b></div><div class="history-level"><small>INITIAL SL</small><b>'+fmt(initSL)+'</b></div><div class="history-level"><small>INITIAL TARGET</small><b>'+fmt(initTarget)+'</b></div><div class="history-level"><small>EXIT PRICE</small><b>'+(exit==null?"—":fmt(exit))+'</b></div></div>'+quantityBlock+'<div class="history-timeline">'+eventCards+'</div></article>';
   }).join(""):'<div class="history-muted">No trades match these filters.</div>';
  }catch(e){const message=e&&e.message?e.message:"Unknown database error";$("historyConnection").textContent="Database unavailable · "+message;$("historyRows").innerHTML='<div class="history-muted">Could not load history. '+message+'</div>';console.error("Trade history load:",e)}
  finally{if(refreshBtn){refreshBtn.disabled=false;refreshBtn.textContent="↻ Refresh"}}
@@ -942,17 +943,23 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   const activeEntryTime=pos?.entryTime??time;
   const tradeKey=["DRP3",scanSymbol,scanTimeframe,activeEntryTime].join(":");
   const eventKey=["DRP3",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
-  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
+  const metadata={event_label:kind};
+  if(eventType==="STOP_LOSS_HIT"&&pos){metadata.max_favorable_points=Number(pos.maxFavorablePoints||0);metadata.max_adverse_points=Number(pos.maxAdversePoints||0);}
+  saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata});
  };
  const makePosition=(side,first,second,entry,time,stop)=>{
   const rangeHigh=Math.max(first.high,second.high),rangeLow=Math.min(first.low,second.low);
   const risk=side==="BUY"?entry-stop:stop-entry;
   if(!(risk>0))return null;
-  return {side,entry,sl:stop,target:side==="BUY"?entry+2*risk:entry-2*risk,rangeHigh,rangeLow,first,second,entryTime:time,targetHit:false};
+  return {side,entry,sl:stop,target:side==="BUY"?entry+2*risk:entry-2*risk,rangeHigh,rangeLow,first,second,entryTime:time,targetHit:false,maxFavorablePoints:0,maxAdversePoints:0};
  };
  for(let i=1;i<candles.length;i++){
   const prev=candles[i-1],cur=candles[i];
   if(pos){
+   const favorable=pos.side==="BUY"?cur.high-pos.entry:pos.entry-cur.low;
+   const adverse=pos.side==="BUY"?cur.low-pos.entry:pos.entry-cur.high;
+   pos.maxFavorablePoints=Math.max(pos.maxFavorablePoints??0,favorable);
+   pos.maxAdversePoints=Math.min(pos.maxAdversePoints??0,adverse);
    if(pos.side==="BUY"){
     // A close below the complete active two-candle range reverses BUY to SELL.
     if(cur.close<pos.rangeLow){
