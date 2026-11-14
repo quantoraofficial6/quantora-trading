@@ -1036,7 +1036,8 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
    $("signalReason").textContent="Waiting for a candle to close beyond the previous candle's high or low.";
    $("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";
   }
-  $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'<small class="feed-points '+(e.points>=0?"positive":"negative")+'">'+fmtSigned(e.points)+' pts</small></div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
+  const feedEvents=history.length?history:(pos?[{side:pos.side,kind:pos.side+" ENTRY",price:pos.entry,time:pos.entryTime,detail:"Active trade · entry confirmed.",entryPrice:pos.entry,points:0}]:[]);
+  $("signalFeed").innerHTML=feedEvents.length?feedEvents.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'<small class="feed-points '+(e.points>=0?"positive":"negative")+'">'+fmtSigned(e.points)+" pts"+'</small></div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
  }
 }
 function updateStructure(c){
