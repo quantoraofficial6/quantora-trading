@@ -1369,9 +1369,15 @@ async function scanAllMarketsAndTimeframes(){
 }
 
 async function start(){
- tickClock();setInterval(tickClock,1000);initChart();setupMainChartControls();loadTradeHistory();setInterval(loadTradeHistory,300000);
+ tickClock();setInterval(tickClock,1000);
+ try{initChart();setupMainChartControls()}catch(e){setConnection("Chart initialization failed · "+e.message,true);console.error("Main chart initialization:",e)}
+ loadTradeHistory();setInterval(loadTradeHistory,300000);
+ // Keep market data and Liquidity Sweep refreshing even if historical chart loading is slow.
+ setInterval(refreshTickers,10000);setInterval(refreshChart,5000);
+ setInterval(scanAllMarketsAndTimeframes,5000);
+ setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},10000);
  await Promise.allSettled([refreshTickers(),refreshChart()]);
- setInterval(refreshTickers,10000);setInterval(refreshChart,5000);setInterval(scanAllMarketsAndTimeframes,5000);scanAllMarketsAndTimeframes();setInterval(()=>{if(!$("liquidityView").hidden)refreshLiquidity(false)},10000);
+ scanAllMarketsAndTimeframes();
 }
 start();
 /* Institutional Market Intelligence: isolated read-only fetches; no strategy/Supabase writes. */
