@@ -755,7 +755,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      pushEvent("BUY","BUY TRADE CLOSED · RANGE REVERSAL",cur.close,cur.time,"BUY closed because candle closed below the complete active range.");
      const c1=pos.c1.low<=pos.c2.low?pos.c1:pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=c1.high,risk=sl-cur.close;
      pos=risk>0?{side:"SELL",entry:cur.close,sl,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false}:null;
-     if(pos)pushEvent("SELL","SELL ENTRY · RANGE REVERSAL",cur.close,cur.time,"Previous C1/C2 candle with lower Low selected as new C1; breakdown candle is new C2.");
+     if(pos)pushEvent("SELL","SELL ENTRY · RANGE REVERSAL",cur.close,cur.time,"Previous range reference candle with the lower Low selected; breakdown candle confirms the new range.");
      lastEvent="SELL";continue;
     }
     if(!pos.targetHit&&cur.high>=pos.target){pos.targetHit=true;pos.targetHitTime=cur.time;pushEvent("BUY","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position remains active.");lastEvent="TARGET";}
@@ -763,14 +763,14 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      const c1=pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=lo,risk=cur.close-sl,recalc=pos.targetHit;
      pos.c1=c1;pos.c2=c2;pos.rangeHigh=hi;pos.rangeLow=lo;pos.sl=sl;
      if(recalc&&risk>0){pos.target=cur.close+2*risk;pos.targetHit=false;pos.targetHitTime=null;}
-     pushEvent("BUY",recalc&&risk>0?"NEW TARGET · C3 RANGE":"NEW RANGE · C3 CONTINUATION",cur.close,cur.time,"Old C2 is new C1; breakout candle is new C2. SL is the lower Low of new C1/C2.");
+     pushEvent("BUY",recalc&&risk>0?"NEW TARGET · RANGE UPDATE":"NEW RANGE · CONTINUATION",cur.close,cur.time,"Previous breakout candle becomes the new reference; the latest candle confirms the range. Stop loss is set at the lower Low of the two candles.");
     }
    }else{
     if(cur.close>pos.rangeHigh){
      pushEvent("SELL","SELL TRADE CLOSED · RANGE REVERSAL",cur.close,cur.time,"SELL closed because candle closed above the complete active range.");
      const c1=pos.c1.high>=pos.c2.high?pos.c1:pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=c1.low,risk=cur.close-sl;
      pos=risk>0?{side:"BUY",entry:cur.close,sl,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false}:null;
-     if(pos)pushEvent("BUY","BUY ENTRY · RANGE REVERSAL",cur.close,cur.time,"Previous C1/C2 candle with higher High selected as new C1; breakout candle is new C2.");
+     if(pos)pushEvent("BUY","BUY ENTRY · RANGE REVERSAL",cur.close,cur.time,"Previous range reference candle with the higher High selected; breakout candle confirms the new range.");
      lastEvent="BUY";continue;
     }
     if(!pos.targetHit&&cur.low<=pos.target){pos.targetHit=true;pos.targetHitTime=cur.time;pushEvent("SELL","TARGET HIT · TRAILING CONTINUES",pos.target,cur.time,"Target reached. Position remains active.");lastEvent="TARGET";}
@@ -778,25 +778,25 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
      const c1=pos.c2,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=hi,risk=sl-cur.close,recalc=pos.targetHit;
      pos.c1=c1;pos.c2=c2;pos.rangeHigh=hi;pos.rangeLow=lo;pos.sl=sl;
      if(recalc&&risk>0){pos.target=cur.close-2*risk;pos.targetHit=false;pos.targetHitTime=null;}
-     pushEvent("SELL",recalc&&risk>0?"NEW TARGET · C3 RANGE":"NEW RANGE · C3 CONTINUATION",cur.close,cur.time,"Old C2 is new C1; breakdown candle is new C2. SL is the higher High of new C1/C2.");
+     pushEvent("SELL",recalc&&risk>0?"NEW TARGET · RANGE UPDATE":"NEW RANGE · CONTINUATION",cur.close,cur.time,"Previous breakdown candle becomes the new reference; the latest candle confirms the range. Stop loss is set at the higher High of the two candles.");
     }
    }
   }else if(cur.close>prev.high){
    const c1=prev,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=lo,risk=cur.close-sl;
-   if(risk>0){pos={side:"BUY",entry:cur.close,sl,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false};pushEvent("BUY","BUY ENTRY · C1/C2 BREAKOUT",cur.close,cur.time,"C2 closed above C1 High; initial range formed by C1 and C2.");lastEvent="BUY";}
+   if(risk>0){pos={side:"BUY",entry:cur.close,sl,target:cur.close+2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false};pushEvent("BUY","BUY ENTRY · RANGE BREAKOUT",cur.close,cur.time,"Price closed above the previous candle High; the active range is now established.");lastEvent="BUY";}
   }else if(cur.close<prev.low){
    const c1=prev,c2=cur,hi=Math.max(c1.high,c2.high),lo=Math.min(c1.low,c2.low),sl=hi,risk=sl-cur.close;
-   if(risk>0){pos={side:"SELL",entry:cur.close,sl,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false};pushEvent("SELL","SELL ENTRY · C1/C2 BREAKDOWN",cur.close,cur.time,"C2 closed below C1 Low; initial range formed by C1 and C2.");lastEvent="SELL";}
+   if(risk>0){pos={side:"SELL",entry:cur.close,sl,target:cur.close-2*risk,rangeHigh:hi,rangeLow:lo,c1,c2,entryTime:cur.time,targetHit:false};pushEvent("SELL","SELL ENTRY · RANGE BREAKDOWN",cur.close,cur.time,"Price closed below the previous candle Low; the active range is now established.");lastEvent="SELL";}
   }
  }
  if(!silent){
   clearStrategyLines();
   if(pos){
    const isBuy=pos.side==="BUY";$("signalState").textContent=pos.targetHit?(pos.side+" · TARGET HIT · ACTIVE"):pos.side;$("signalState").style.color=isBuy?"#31d6a0":"#ff647c";
-   $("signalReason").textContent=(pos.targetHit?"TARGET HIT. Position remains active. ":"")+(isBuy?"C1/C2 range breakout strategy active. ":"C1/C2 range breakdown strategy active. ")+"C3 continuation and reversal require a candle close beyond the complete active range.";
+   $("signalReason").textContent=(pos.targetHit?"TARGET HIT. Position remains active. ":"")+(isBuy?"RANGE BREAKOUT CONDITIONS ACTIVE. ":"RANGE BREAKDOWN CONDITIONS ACTIVE. ")+"Continuation and reversal require a candle close beyond the complete active range.";
    $("entry").textContent=fmt(pos.entry);$("stop").textContent=fmt(pos.sl);$("target").textContent=fmt(pos.target);$("rr").textContent="1 : 2";
    addStrategyLine(pos.sl,"#ff647c","RANGE STOP LOSS");addStrategyLine(pos.target,"#31d6a0",pos.targetHit?"NEXT TARGET":"2R TARGET");addStrategyLine(isBuy?pos.rangeHigh:pos.rangeLow,"#e7bd70","ACTIVE RANGE",1);
-  }else{$("signalState").textContent=lastEvent==="TARGET"?"TARGET HIT":"WAIT";$("signalState").style.color="#e7bd70";$("signalReason").textContent="Waiting for C2 to close beyond C1 High/Low. Signals use closed candles only.";$("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";}
+  }else{$("signalState").textContent=lastEvent==="TARGET"?"TARGET HIT":"WAIT";$("signalState").style.color="#e7bd70";$("signalReason").textContent="Waiting for price to close beyond the previous candle range. Signals use closed candles only.";$("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";}
   $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'</div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
  }
 }
