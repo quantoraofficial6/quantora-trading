@@ -427,7 +427,8 @@ async function loadTradeHistoryOriginal(){
     const eventTime=e.candle_time||e.occurred_at;
     const eventKey=[e.event_type,e.side,eventTime].join("|");
     const prior=canonicalEvents.get(eventKey);
-    if(!prior||new Date(e.occurred_at||0)>new Date(prior.occurred_at||0)||new Date(e.occurred_at||0).getTime()===new Date(prior.occurred_at||0).getTime()&&Number(e.id||0)>Number(prior.id||0))canonicalEvents.set(eventKey,e);
+    const sourceRank=x=>x.metadata?.data_source==="MARK_PRICE"?1:0;
+    if(!prior||sourceRank(e)>sourceRank(prior)||sourceRank(e)===sourceRank(prior)&&(new Date(e.occurred_at||0)>new Date(prior.occurred_at||0)||new Date(e.occurred_at||0).getTime()===new Date(prior.occurred_at||0).getTime()&&Number(e.id||0)>Number(prior.id||0)))canonicalEvents.set(eventKey,e);
    }
    const cleanGroup=[...canonicalEvents.values()];
    cleanGroup.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at)||Number(a.id||0)-Number(b.id||0));
@@ -442,9 +443,10 @@ async function loadTradeHistoryOriginal(){
   const uniqueTrades=new Map();
   for(const item of trades){
    const evs=item[1],entry=evs.find(e=>e.event_type==="ENTRY")||evs[0];
-   const dedupeKey=[entry.symbol,entry.timeframe,entry.side,entry.entry_time||entry.candle_time,entry.entry_price??entry.price].join("|");
+   const dedupeKey=[entry.symbol,entry.timeframe,entry.side,entry.entry_time||entry.candle_time].join("|");
    const old=uniqueTrades.get(dedupeKey);
-   if(!old||String(item[0]).startsWith("DRP:")&&!String(old[0]).startsWith("DRP:"))uniqueTrades.set(dedupeKey,item);
+   const hasMark=events=>events.some(e=>e.metadata?.data_source==="MARK_PRICE");
+   if(!old||hasMark(item[1])&&!hasMark(old[1])||hasMark(item[1])===hasMark(old[1])&&String(item[0]).startsWith("DRP:")&&!String(old[0]).startsWith("DRP:"))uniqueTrades.set(dedupeKey,item);
   }
   trades.splice(0,trades.length,...uniqueTrades.values());
   trades.sort((a,b)=>{
@@ -593,7 +595,7 @@ async function fetchAndReplayHistoryPair(coin,tf){
   const gathered=[];
   for(let i=0;i<ranges.length;i+=2){
    const batch=await Promise.all(ranges.slice(i,i+2).map(async ([from,to])=>{
-    const candleSymbol=coin==="XAUTUSD"?"MARK:"+coin:coin;
+    const candleSymbol="MARK:"+coin;
     const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(candleSymbol)+"&start="+from+"&end="+to;
     const response=await fetch(url,{cache:"no-store",headers:{Accept:"application/json"}});
     if(!response.ok)throw Error(coin+" "+tf+" history HTTP "+response.status);
@@ -670,9 +672,9 @@ async function fetchAllTickers(){
  const map={};
  rows.forEach(t=>{
   const symbol=t.symbol;
-  const price=Number(t.close??t.mark_price??t.spot_price);
+  const price=Number(t.mark_price??t.close??t.spot_price);
   if(symbol&&Number.isFinite(price)&&price>0){
-   map[symbol]={price,change:Number(t.ltp_change_24h??t.mark_change_24h??t.change_24h??t.change)};
+   map[symbol]={price,change:Number(t.mark_change_24h??t.ltp_change_24h??t.change_24h??t.change)};
   }
  });
  return map;
@@ -682,9 +684,9 @@ async function fetchTicker(m){
  if(!r.ok)throw Error(m+" ticker HTTP "+r.status);
  const j=await r.json(),t=Array.isArray(j.result)?j.result[0]:j.result;
  if(!t)throw Error(m+" ticker unavailable");
- const price=Number(t.close??t.mark_price??t.spot_price);
+ const price=Number(t.mark_price??t.close??t.spot_price);
  if(!Number.isFinite(price)||price<=0)throw Error(m+" price missing");
- return {price,change:Number(t.ltp_change_24h??t.mark_change_24h??t.change_24h??t.change)};
+ return {price,change:Number(t.mark_change_24h??t.ltp_change_24h??t.change_24h??t.change)};
 }
 function renderMarkets(){
  $("marketStrip").innerHTML=markets.map(m=>{
@@ -715,7 +717,7 @@ async function refreshTickers(){
 }
 async function fetchCandlesFor(symbol,tf,limit=240){
  const sec=tfSeconds[tf],end=Math.floor(Date.now()/1000),start=end-sec*limit;
- const candleSymbol=symbol==="XAUTUSD"?"MARK:"+symbol:symbol;
+ const candleSymbol="MARK:"+symbol;
  const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(candleSymbol)+"&start="+start+"&end="+end;
  const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("Candle API "+r.status);
  const j=await r.json();if(j.success===false)throw Error("Candle data request failed");
@@ -772,7 +774,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   const eventType=kind.includes("TRADE CLOSED")?"TRADE_CLOSED":kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time,tradeKey=["DRP",scanSymbol,scanTimeframe,activeEntryTime].join(":");
   const eventKey=["DRP",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
-  const pendingSave=saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind}});
+  const pendingSave=saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind,data_source:"MARK_PRICE"}});
   tradeSavePromises.add(pendingSave);pendingSave.finally(()=>tradeSavePromises.delete(pendingSave));
  };
  for(let i=1;i<candles.length;i++){
