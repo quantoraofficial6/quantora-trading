@@ -403,7 +403,7 @@ async function loadTradeHistoryOriginal(){
    return;
   }
   // Defensive client-side isolation: never render a row outside the selected market/timeframe.
-  const rows=allRows.filter(x=>x.symbol===coinFilter&&x.timeframe===tfFilter&&x.metadata?.data_quality!=="quarantined");
+  const rows=allRows.filter(x=>x.symbol===coinFilter&&x.timeframe===tfFilter&&x.metadata?.data_quality!=="quarantined"&&x.metadata?.data_source==="MARK_PRICE");
   $("historyConnection").textContent="Connected · last 30 days · refreshed "+new Date().toLocaleTimeString();
   // Legacy counters are not present in the current premium Journal layout.
   // Keep this compatibility-safe so missing optional elements cannot stop history rendering.
@@ -773,7 +773,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   history.unshift({side,kind,price,time,detail});if(history.length>8)history.pop();
   const eventType=kind.includes("TRADE CLOSED")?"TRADE_CLOSED":kind.includes("ENTRY")?"ENTRY":kind.includes("TARGET HIT")?"TARGET_HIT":kind.includes("STOP LOSS HIT")?"STOP_LOSS_HIT":(kind.includes("NEW RANGE")||kind.includes("NEW TARGET"))?"RANGE_UPDATE":"STATUS_SNAPSHOT";
   const activeEntryTime=pos?.entryTime??time,tradeKey=["DRP",scanSymbol,scanTimeframe,activeEntryTime].join(":");
-  const eventKey=["DRP",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
+  const eventKey=["DRP","MARK_PRICE",scanSymbol,scanTimeframe,tradeKey,eventType,time,Number(price).toFixed(6)].join(":");
   const pendingSave=saveTradeEvent({event_key:eventKey,trade_key:tradeKey,strategy:"Dynamic Range Pro",symbol:scanSymbol,timeframe:scanTimeframe,side,event_type:eventType,status:eventType==="TARGET_HIT"?"TARGET_HIT_TRAILING":eventType==="STOP_LOSS_HIT"?"STOP_LOSS_HIT":"ACTIVE",price,entry_price:pos?.entry??price,exit_price:eventType==="STOP_LOSS_HIT"?price:null,stop_loss:pos?.sl??null,target_price:pos?.target??null,entry_time:new Date(activeEntryTime*1000).toISOString(),candle_time:new Date(time*1000).toISOString(),details:detail,metadata:{event_label:kind,data_source:"MARK_PRICE"}});
   tradeSavePromises.add(pendingSave);pendingSave.finally(()=>tradeSavePromises.delete(pendingSave));
  };
