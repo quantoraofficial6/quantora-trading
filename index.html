@@ -376,7 +376,13 @@ async function loadTradeHistoryOriginal(){
    if(!r.ok)throw Error("History load "+r.status+" "+(await r.text()).slice(0,160));
    const batch=await r.json();allRows.push(...batch);if(batch.length<batchSize)break;offset+=batchSize;
   }
-  const rows=allRows;
+  // Discard a response if the user changed either filter while the database request was in flight.
+  if(coinFilter!==($("historySymbolFilter")?.value||"")||tfFilter!==($("historyTimeframeFilter")?.value||"")){
+   historyLoadPending=true;
+   return;
+  }
+  // Defensive client-side isolation: never render a row outside the selected market/timeframe.
+  const rows=allRows.filter(x=>x.symbol===coinFilter&&x.timeframe===tfFilter);
   $("historyConnection").textContent="Connected · last 30 days · refreshed "+new Date().toLocaleTimeString();
   // Legacy counters are not present in the current premium Journal layout.
   // Keep this compatibility-safe so missing optional elements cannot stop history rendering.
@@ -514,19 +520,33 @@ $("historyRows")?.addEventListener("input",e=>{
  pctEl.textContent=pct==null?"—":(pct>0?"+":"")+pct.toFixed(2)+"%";pctEl.className=pct==null?"":pct>=0?"positive":"negative";
 });
 
-let historyLoadBusy=false,historyBackfillBusy=new Set(),historyBackfillDone=new Set();
+let historyLoadBusy=false,historyLoadPending=false,historyBackfillBusy=new Set(),historyBackfillDone=new Set();
 async function loadTradeHistory(){
- if(historyLoadBusy||$("tradeJournalModal").hidden)return;
+ if($("tradeJournalModal").hidden)return;
+ if(historyLoadBusy){historyLoadPending=true;return}
  historyLoadBusy=true;
+ const requestedCoin=$("historySymbolFilter")?.value||"",requestedTf=$("historyTimeframeFilter")?.value||"";
  try{
-  const coin=$("historySymbolFilter")?.value||"",tf=$("historyTimeframeFilter")?.value||"";
-  if(coin&&tf){
-   const key=coin+"|"+tf;
+  if(requestedCoin&&requestedTf){
+   const key=requestedCoin+"|"+requestedTf;
    while(historyBackfillBusy.has(key))await new Promise(resolve=>setTimeout(resolve,100));
-   if(!historyCandleCache.has(key))await fetchAndReplayHistoryPair(coin,tf);
+   if(requestedCoin!==($("historySymbolFilter")?.value||"")||requestedTf!==($("historyTimeframeFilter")?.value||"")){
+    historyLoadPending=true;return;
+   }
+   if(!historyCandleCache.has(key))await fetchAndReplayHistoryPair(requestedCoin,requestedTf);
+  }
+  if(requestedCoin!==($("historySymbolFilter")?.value||"")||requestedTf!==($("historyTimeframeFilter")?.value||"")){
+   historyLoadPending=true;return;
   }
   return await renderTradeHistory();
- }finally{historyLoadBusy=false}
+ }finally{
+  historyLoadBusy=false;
+  const changed=requestedCoin!==($("historySymbolFilter")?.value||"")||requestedTf!==($("historyTimeframeFilter")?.value||"");
+  if(historyLoadPending||changed){
+   historyLoadPending=false;
+   Promise.resolve().then(()=>loadTradeHistory());
+  }
+ }
 }
 const renderTradeHistory=loadTradeHistoryOriginal;
 async function fetchAndReplayHistoryPair(coin,tf){
