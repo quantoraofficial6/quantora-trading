@@ -797,7 +797,7 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
    $("entry").textContent=fmt(pos.entry);$("stop").textContent=fmt(pos.sl);$("target").textContent=fmt(pos.target);$("rr").textContent="1 : 2";
    addStrategyLine(pos.sl,"#ff647c","RANGE STOP LOSS");addStrategyLine(pos.target,"#31d6a0",pos.targetHit?"NEXT TARGET":"2R TARGET");addStrategyLine(isBuy?pos.rangeHigh:pos.rangeLow,"#e7bd70","ACTIVE RANGE",1);
   }else{$("signalState").textContent=lastEvent==="TARGET"?"TARGET HIT":"WAIT";$("signalState").style.color="#e7bd70";$("signalReason").textContent="Waiting for price to close beyond the previous candle range. Signals use closed candles only.";$("entry").textContent="—";$("stop").textContent="—";$("target").textContent="—";$("rr").textContent="1 : 2";}
-  $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+e.detail+'</small><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'</div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
+  $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'</div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
  }
 }
 function updateStructure(c){
