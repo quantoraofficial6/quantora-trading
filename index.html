@@ -382,7 +382,7 @@ async function loadTradeHistoryOriginal(){
    return;
   }
   // Defensive client-side isolation: never render a row outside the selected market/timeframe.
-  const rows=allRows.filter(x=>x.symbol===coinFilter&&x.timeframe===tfFilter);
+  const rows=allRows.filter(x=>x.symbol===coinFilter&&x.timeframe===tfFilter&&x.metadata?.data_quality!=="quarantined");
   $("historyConnection").textContent="Connected · last 30 days · refreshed "+new Date().toLocaleTimeString();
   // Legacy counters are not present in the current premium Journal layout.
   // Keep this compatibility-safe so missing optional elements cannot stop history rendering.
@@ -574,6 +574,10 @@ async function fetchAndReplayHistoryPair(coin,tf){
   }
   const unique=[...new Map(gathered.sort((a,b)=>a.time-b.time).map(c=>[c.time,c])).values()];
   if(!unique.length)throw Error("No real candles returned for "+coin+" "+tf);
+  // Gold must never accept BTC-scale candles. Reject the whole response before cache or DB replay.
+  if(coin==="XAUTUSD"&&unique.some(c=>Math.max(c.open,c.high,c.low,c.close)>10000)){
+   throw Error("Rejected invalid XAUTUSD history: candle price exceeds the Gold safety ceiling; no events were replayed.");
+  }
   const expected=Math.floor((end-start)/sec),coverage=unique.length/expected;
   if(coverage<0.985)throw Error("Incomplete candle history for "+coin+" "+tf+" ("+unique.length+"/"+expected+")");
   historyCandleCache.set(key,unique);
