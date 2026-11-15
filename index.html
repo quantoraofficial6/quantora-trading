@@ -672,7 +672,7 @@ async function fetchAllTickers(){
  const map={};
  rows.forEach(t=>{
   const symbol=t.symbol;
-  const price=Number(t.mark_price??t.close??t.spot_price);
+  const price=Number(t.mark_price);
   if(symbol&&Number.isFinite(price)&&price>0){
    map[symbol]={price,change:Number(t.mark_change_24h??t.ltp_change_24h??t.change_24h??t.change)};
   }
@@ -684,7 +684,7 @@ async function fetchTicker(m){
  if(!r.ok)throw Error(m+" ticker HTTP "+r.status);
  const j=await r.json(),t=Array.isArray(j.result)?j.result[0]:j.result;
  if(!t)throw Error(m+" ticker unavailable");
- const price=Number(t.mark_price??t.close??t.spot_price);
+ const price=Number(t.mark_price);
  if(!Number.isFinite(price)||price<=0)throw Error(m+" price missing");
  return {price,change:Number(t.mark_change_24h??t.ltp_change_24h??t.change_24h??t.change)};
 }
@@ -703,7 +703,7 @@ async function refreshTickers(){
   const missing=markets.filter(m=>!snapshot[m.symbol]);
   const fallback=await Promise.allSettled(missing.map(async m=>[m.symbol,await fetchTicker(m.symbol)]));
   fallback.forEach(x=>{if(x.status==="fulfilled")snapshot[x.value[0]]=x.value[1]});
-  marketData={...marketData,...snapshot};
+  marketData=snapshot;
   renderMarkets();
   updateJournalLivePrices();
   const liveCount=markets.filter(m=>Number.isFinite(marketData[m.symbol]?.price)).length;
