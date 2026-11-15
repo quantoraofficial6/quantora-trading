@@ -300,6 +300,11 @@ const tradeLogSeen=new Set();
 const tradeSavePromises=new Set();
 async function saveTradeEvent(ev){
  if(!ev||!ev.event_key||tradeLogSeen.has(ev.event_key))return;
+ // Database write guard: never persist BTC-scale values under the Gold market symbol.
+ if(ev.symbol==="XAUTUSD"&&Math.max(Number(ev.price)||0,Number(ev.entry_price)||0,Number(ev.exit_price)||0,Number(ev.stop_loss)||0,Number(ev.target_price)||0)>10000){
+  console.error("Blocked invalid XAUTUSD trade event; price is outside Gold range.",ev);
+  return;
+ }
  tradeLogSeen.add(ev.event_key);
  try{
   const r=await fetch(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(ev)});
@@ -686,7 +691,9 @@ async function fetchCandlesFor(symbol,tf,limit=240){
  const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(symbol)+"&start="+start+"&end="+end;
  const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("Candle API "+r.status);
  const j=await r.json();if(j.success===false)throw Error("Candle data request failed");
- return (j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time).filter((c,i,a)=>!i||c.time!==a[i-1].time);
+ const candles=(j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time).filter((c,i,a)=>!i||c.time!==a[i-1].time);
+ if(symbol==="XAUTUSD"&&candles.some(c=>Math.max(c.open,c.high,c.low,c.close)>10000))throw Error("Rejected invalid Gold candles: price exceeds Gold safety ceiling. Strategy was not run.");
+ return candles;
 }
 async function fetchCandles(){return fetchCandlesFor(selected,timeframe,240)}
 let chartHasFit=false,livePriceLine=null;
@@ -726,6 +733,11 @@ let strategyPriceLines=[];
 function clearStrategyLines(){strategyPriceLines.forEach(x=>{try{candleSeries.removePriceLine(x)}catch(_){}});strategyPriceLines=[]}
 function addStrategyLine(p,color,label,style=2){const x=priceLine(p,color,label,style);if(x)strategyPriceLines.push(x)}
 function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=timeframe){
+ if(scanSymbol==="XAUTUSD"&&candles.some(c=>Math.max(Number(c.open)||0,Number(c.high)||0,Number(c.low)||0,Number(c.close)||0)>10000)){
+  if(!silent){$("signalState").textContent="GOLD DATA REJECTED";$("signalReason").textContent="Gold candle feed returned a non-Gold price. Strategy paused; no trade event was saved.";}
+  console.error("Blocked Dynamic Range Pro scan: invalid XAUTUSD candles.");
+  return;
+ }
  const history=[];let pos=null,lastEvent=null;
  const pushEvent=(side,kind,price,time,detail)=>{
   history.unshift({side,kind,price,time,detail});if(history.length>8)history.pop();
