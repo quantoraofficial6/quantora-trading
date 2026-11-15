@@ -420,10 +420,20 @@ async function loadTradeHistoryOriginal(){
   });
   const trades=[];
   for(const [key,group] of tradeGroups){
-   group.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at)||Number(a.id||0)-Number(b.id||0));
-   const entryEvent=group.find(e=>e.event_type==="ENTRY");
+   // One canonical event per trade event type and candle. When a corrected candle-source
+   // replay exists, prefer the most recently written version instead of showing both.
+   const canonicalEvents=new Map();
+   for(const e of group){
+    const eventTime=e.candle_time||e.occurred_at;
+    const eventKey=[e.event_type,e.side,eventTime].join("|");
+    const prior=canonicalEvents.get(eventKey);
+    if(!prior||new Date(e.occurred_at||0)>new Date(prior.occurred_at||0)||new Date(e.occurred_at||0).getTime()===new Date(prior.occurred_at||0).getTime()&&Number(e.id||0)>Number(prior.id||0))canonicalEvents.set(eventKey,e);
+   }
+   const cleanGroup=[...canonicalEvents.values()];
+   cleanGroup.sort((a,b)=>new Date(a.candle_time||a.occurred_at)-new Date(b.candle_time||b.occurred_at)||Number(a.id||0)-Number(b.id||0));
+   const entryEvent=cleanGroup.find(e=>e.event_type==="ENTRY");
    if(!entryEvent)continue;
-   const ownEvents=group.filter(e=>e.side===entryEvent.side);
+   const ownEvents=cleanGroup.filter(e=>e.side===entryEvent.side);
    const close=ownEvents.find(e=>e.event_type==="STOP_LOSS_HIT"||e.event_type==="TRADE_CLOSED");
    const events=close?ownEvents.filter(e=>new Date(e.candle_time||e.occurred_at)<=new Date(close.candle_time||close.occurred_at)):ownEvents;
    trades.push([key,events]);
@@ -503,7 +513,7 @@ async function loadTradeHistoryOriginal(){
      if(e.stop_loss!=null)levelBits.push("Stop Loss: "+fmt(e.stop_loss));
      if(e.target_price!=null)levelBits.push("Target: "+fmt(e.target_price));
     }
-    return '<div class="history-event-card"><div class="history-event-top"><b>'+label+'</b><time>'+localTime+'</time></div><div class="history-event-values"><span>'+priceLabel+': <strong>'+fmt(e.price)+'</strong></span>'+levelBits.map(v=>'<span>'+v+'</span>').join("")+'</div><div class="history-muted">'+String(e.details||"")+'</div></div>';
+    return '<div class="history-event-card"><div class="history-event-top"><b>'+label+'</b><time>'+localTime+'</time></div><div class="history-event-values"><span>'+priceLabel+': <strong>'+fmt(e.price)+'</strong></span>'+levelBits.map(v=>'<span>'+v+'</span>').join("")+'</div></div>';
    }).join("");
    const entryTimeText=formatJournalTime(entryAt,true);
    const initSL=entryEvent.stop_loss,initTarget=entryEvent.target_price;
