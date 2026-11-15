@@ -298,6 +298,22 @@ const tfSeconds={"1m":60,"5m":300,"15m":900,"1h":3600,"2h":7200,"4h":14400,"1d":
 const SUPABASE_URL="https://wxbclrvvqcfpanmuohlt.supabase.co",SUPABASE_KEY="sb_publishable_3BeMVDBkC0m6ls2BsGSSIA_m-iOQV_r";
 const tradeLogSeen=new Set();
 const tradeSavePromises=new Set();
+// Supabase publishable keys belong in the apikey header, not as a Bearer JWT.
+// Retry transient browser/network failures so a momentary fetch drop does not lose a trade event.
+async function fetchSupabase(path,options={}){
+ const headers={...(options.headers||{}),apikey:SUPABASE_KEY};
+ let lastError;
+ for(let attempt=0;attempt<3;attempt++){
+  try{
+   return await fetch(SUPABASE_URL+path,{...options,headers});
+  }catch(error){
+   lastError=error;
+   if(attempt===2)break;
+   await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
+  }
+ }
+ throw lastError||new Error("Supabase network request failed");
+}
 async function saveTradeEvent(ev){
  if(!ev||!ev.event_key||tradeLogSeen.has(ev.event_key))return;
  // Database write guard: never persist BTC-scale values under the Gold market symbol.
@@ -307,7 +323,7 @@ async function saveTradeEvent(ev){
  }
  tradeLogSeen.add(ev.event_key);
  try{
-  const r=await fetch(SUPABASE_URL+"/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(ev)});
+  const r=await fetchSupabase("/rest/v1/trade_history_events?on_conflict=event_key",{method:"POST",headers:{"Content-Type":"application/json",Prefer:"resolution=ignore-duplicates,return=minimal"},body:JSON.stringify(ev)});
   if(!r.ok){tradeLogSeen.delete(ev.event_key);throw Error("DB write "+r.status+" "+(await r.text()).slice(0,180))}
 
  }catch(e){tradeLogSeen.delete(ev.event_key);$("historyConnection").textContent="Database save error · "+e.message;console.error("Trade history save:",e)}
@@ -377,7 +393,7 @@ async function loadTradeHistoryOriginal(){
   while(true){
    const params="select=*&symbol=eq."+encodeURIComponent(coinFilter)+"&timeframe=eq."+encodeURIComponent(tfFilter)+"&strategy=eq."+encodeURIComponent("Dynamic Range Pro")+"&candle_time=gte."+encodeURIComponent(since)+"&order=candle_time.desc,id.desc&limit="+batchSize+"&offset="+offset;
    const url=SUPABASE_URL+"/rest/v1/trade_history_events?"+params;
-   const r=await fetch(url,{cache:"no-store",headers:{apikey:SUPABASE_KEY,Authorization:"Bearer "+SUPABASE_KEY,Prefer:"count=none"}});
+   const r=await fetchSupabase(url.replace(SUPABASE_URL,""),{cache:"no-store",headers:{Prefer:"count=none"}});
    if(!r.ok)throw Error("History load "+r.status+" "+(await r.text()).slice(0,160));
    const batch=await r.json();allRows.push(...batch);if(batch.length<batchSize)break;offset+=batchSize;
   }
@@ -567,7 +583,8 @@ async function fetchAndReplayHistoryPair(coin,tf){
   const gathered=[];
   for(let i=0;i<ranges.length;i+=2){
    const batch=await Promise.all(ranges.slice(i,i+2).map(async ([from,to])=>{
-    const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(coin)+"&start="+from+"&end="+to;
+    const candleSymbol=coin==="XAUTUSD"?"MARK:"+coin:coin;
+    const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(candleSymbol)+"&start="+from+"&end="+to;
     const response=await fetch(url,{cache:"no-store",headers:{Accept:"application/json"}});
     if(!response.ok)throw Error(coin+" "+tf+" history HTTP "+response.status);
     const json=await response.json();
