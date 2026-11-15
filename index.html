@@ -688,7 +688,8 @@ async function refreshTickers(){
 }
 async function fetchCandlesFor(symbol,tf,limit=240){
  const sec=tfSeconds[tf],end=Math.floor(Date.now()/1000),start=end-sec*limit;
- const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(symbol)+"&start="+start+"&end="+end;
+ const candleSymbol=symbol==="XAUTUSD"?"MARK:"+symbol:symbol;
+ const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(candleSymbol)+"&start="+start+"&end="+end;
  const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error("Candle API "+r.status);
  const j=await r.json();if(j.success===false)throw Error("Candle data request failed");
  const candles=(j.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)).sort((a,b)=>a.time-b.time).filter((c,i,a)=>!i||c.time!==a[i-1].time);
