@@ -822,7 +822,8 @@ async function refreshTickers(){
   setConnection("Price feed error · "+e.message,true);
  }
 }
-async function fetchCandlesFor(symbol,tf,limit=240){
+// Replay a deep candle window so long-running positions are not lost when the app reloads.
+async function fetchCandlesFor(symbol,tf,limit=1500){
  const sec=tfSeconds[tf],end=Math.floor(Date.now()/1000),start=end-sec*limit;
  const candleSymbol="MARK:"+symbol;
  const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent(candleSymbol)+"&start="+start+"&end="+end;
@@ -832,7 +833,7 @@ async function fetchCandlesFor(symbol,tf,limit=240){
  if(symbol==="XAUTUSD"&&candles.some(c=>Math.max(c.open,c.high,c.low,c.close)>10000))throw Error("Rejected invalid Gold candles: price exceeds Gold safety ceiling. Strategy was not run.");
  return candles;
 }
-async function fetchCandles(){return fetchCandlesFor(selected,timeframe,240)}
+async function fetchCandles(){return fetchCandlesFor(selected,timeframe,1500)}
 let chartHasFit=false,livePriceLine=null;
 async function refreshChart(){
  if(chartBusy||!candleSeries)return;chartBusy=true;
@@ -1197,7 +1198,7 @@ async function scanAllMarketsAndTimeframes(){
  backgroundScanBusy=true;
  try{
   const pair=strategyScanPairs[backgroundScanIndex++%strategyScanPairs.length];
-  const candles=await fetchCandlesFor(pair.symbol,pair.tf,240);
+  const candles=await fetchCandlesFor(pair.symbol,pair.tf,1500);
   const now=Math.floor(Date.now()/1000),sec=tfSeconds[pair.tf];
   const closed=candles.filter(c=>c.time+sec<=now);
   if(closed.length>=2)runStrategy(closed,true,pair.symbol,pair.tf);
