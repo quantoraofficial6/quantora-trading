@@ -327,6 +327,7 @@ input:focus,select:focus{
 <section class="welcome"><div><div class="eyebrow">MARKET OVERVIEW</div><h1>Trade with clarity.</h1><p>Real-Time Markets. Precision Signals. Smarter Trading.</p></div><div class="market-status" id="connection">Connecting to Delta Exchange…</div></section>
 <section class="strategy-switch" aria-label="Strategy selector">
  <button class="strategy-tab active" id="classicTab" type="button">Dynamic Range Pro</button>
+ <button class="strategy-tab" id="lowRiskTab" type="button">Low Risk <span>BTC · GOLD</span></button>
  <button class="strategy-tab" id="liquidityTab" type="button">Liquidity Sweep <span>15M</span></button>
 </section>
 
@@ -340,11 +341,18 @@ input:focus,select:focus{
   <div class="chart-wrap" id="chart"></div>
   <div class="chart-foot"><span>● Candlestick chart</span><span id="chartUpdated">Waiting for chart data</span><span>Prices in USD</span></div>
  </section>
- <aside class="panel signal-panel">
+ <aside class="panel signal-panel" id="drpSignalPanel">
   <div class="panel-head"><div><div class="panel-title">STRATEGY SIGNAL</div><div class="panel-caption">RULE-BASED MARKET ANALYSIS</div></div><span class="live-pill">ENGINE READY</span></div>
   <div class="signal-main"><div class="signal-label">CURRENT SETUP</div><div class="signal-state"><i class="signal-dot"></i><strong id="signalState">WAIT</strong></div><div class="signal-desc" id="signalReason">Waiting for two consecutive candles to confirm a range breakout.</div></div>
   <div class="signal-grid"><div class="signal-level"><span>ENTRY PRICE</span><b id="entry">—</b></div><div class="signal-level"><span>STOP LOSS</span><b id="stop">—</b></div><div class="signal-level"><span>TARGET</span><b id="target">—</b></div><div class="signal-level"><span>RISK / REWARD</span><b id="rr">1 : 2</b></div></div>
   <div class="strategy-note"><b>Two-candle range breakout · All timeframes</b><br>Two green candles with the second closing above the first high = BUY. Two red candles with the second closing below the first low = SELL. Range trails using the previous range’s second candle + breakout candle. SL is confirmed by candle close; SL hit reverses immediately at that close. Initial target: 2R.</div>
+ </aside>
+ <aside class="panel signal-panel" id="lowRiskSignalPanel" hidden>
+  <div class="panel-head"><div><div class="panel-title">LOW RISK SIGNAL</div><div class="panel-caption">RANGE-LEVEL RETRACEMENT ENTRY</div></div><span class="live-pill">LIVE SCAN</span></div>
+  <div class="signal-main"><div class="signal-label">CURRENT SETUP</div><div class="signal-state"><i class="signal-dot" id="lowRiskDot"></i><strong id="lowRiskState">WAIT</strong></div><div class="signal-desc" id="lowRiskReason">Waiting for a confirmed range breakout.</div></div>
+  <div class="signal-grid"><div class="signal-level"><span>ENTRY LEVEL · DRP SL</span><b id="lowRiskEntry">—</b></div><div class="signal-level"><span>FIXED STOP LOSS</span><b id="lowRiskStop">—</b></div><div class="signal-level"><span>TARGET</span><b id="lowRiskTarget">—</b></div><div class="signal-level"><span>RISK / REWARD</span><b>1 : 2</b></div></div>
+  <div class="strategy-note" style="display:block!important"><b>Fixed risk model</b><br>Gold: 10-point SL / 20-point target. Bitcoin: 500-point SL / 1,000-point target. Breakout signal appears first; entry waits for price to retest the Dynamic Range Pro stop level. Signals only — no live orders.</div>
+  <div class="feed" id="lowRiskFeed"><div class="feed-empty">Waiting for a confirmed setup.</div></div>
  </aside>
 </main>
 <section class="lower-grid">
@@ -858,6 +866,7 @@ async function refreshChart(){
   const last=forming||closed[closed.length-1];if(last){$("chartPrice").textContent=fmt(marketData[selected]?.price??last.close)}
   updateStructure(closed);
   runStrategy(closed);
+  runLowRiskStrategy(closed,false,selected,timeframe);
  }catch(e){$("chartUpdated").textContent="Chart unavailable · "+e.message;console.error(e)}
  finally{chartBusy=false}
 }
@@ -938,6 +947,43 @@ function runStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=time
   $("signalFeed").innerHTML=history.length?history.slice(0,6).map(e=>'<div class="feed-item"><div><span class="'+(e.side==="BUY"?"positive":"negative")+'">'+e.kind+'</span><small>'+new Date(e.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(e.price)+'</div></div>').join(""):'<div class="feed-empty">No confirmed setup yet. Waiting for closed candles.</div>';
  }
 }
+function runLowRiskStrategy(candles,silent=false,scanSymbol=selected,scanTimeframe=timeframe){
+ if(!["BTCUSD","XAUTUSD"].includes(scanSymbol))return;
+ if(scanSymbol==="XAUTUSD"&&candles.some(c=>Math.max(c.open,c.high,c.low,c.close)>10000))return;
+ const risk=scanSymbol==="XAUTUSD"?10:500,reward=risk*2;let pending=null,position=null,last="WAIT";const feed=[];
+ const log=(label,price,time)=>{feed.unshift({label,price,time});if(feed.length>5)feed.pop();last=label};
+ const signal=(side,a,b,time,why)=>{const hi=Math.max(a.high,b.high),lo=Math.min(a.low,b.low);pending={side,entry:side==="BUY"?lo:hi,hi,lo,a,b,time};position=null;log(side+" SIGNAL · "+why,pending.entry,time)};
+ for(let i=1;i<candles.length;i++){const prev=candles[i-1],c=candles[i];
+  if(position){
+   const sl=position.side==="BUY"?c.low<=position.stop:c.high>=position.stop,tp=position.side==="BUY"?c.high>=position.target:c.low<=position.target;
+   if(sl||tp){log(sl?"STOP LOSS HIT":"TARGET HIT",sl?position.stop:position.target,c.time);position=null;pending=null;continue}
+   if(position.side==="BUY"&&c.close<position.low){const a=position.a.low<=position.b.low?position.a:position.b;signal("SELL",a,c,c.time,"RANGE REVERSAL");continue}
+   if(position.side==="SELL"&&c.close>position.high){const a=position.a.high>=position.b.high?position.a:position.b;signal("BUY",a,c,c.time,"RANGE REVERSAL");continue}
+   if(position.side==="BUY"&&c.close>position.high||position.side==="SELL"&&c.close<position.low){position.a=position.b;position.b=c;position.high=Math.max(position.a.high,c.high);position.low=Math.min(position.a.low,c.low)}
+   continue;
+  }
+  if(pending){
+   if(c.time>pending.time&&(pending.side==="BUY"?c.low<=pending.entry:c.high>=pending.entry)){
+    const e=pending.entry;position={side:pending.side,entry:e,stop:pending.side==="BUY"?e-risk:e+risk,target:pending.side==="BUY"?e+reward:e-reward,high:pending.hi,low:pending.lo,a:pending.a,b:pending.b};log(position.side+" ENTRY FILLED",e,c.time);pending=null;
+    const stop=position.side==="BUY"?c.low<=position.stop:c.high>=position.stop,target=position.side==="BUY"?c.high>=position.target:c.low<=position.target;
+    if(stop||target){log(stop?"STOP LOSS HIT":"TARGET HIT",stop?position.stop:position.target,c.time);position=null}continue;
+   }
+   if(pending.side==="BUY"&&c.close<pending.low){const a=pending.a.low<=pending.b.low?pending.a:pending.b;signal("SELL",a,c,c.time,"RANGE REVERSAL");continue}
+   if(pending.side==="SELL"&&c.close>pending.high){const a=pending.a.high>=pending.b.high?pending.a:pending.b;signal("BUY",a,c,c.time,"RANGE REVERSAL");continue}
+   if(pending.side==="BUY"&&c.close>pending.high||pending.side==="SELL"&&c.close<pending.low){pending.a=pending.b;pending.b=c;pending.high=Math.max(pending.a.high,c.high);pending.low=Math.min(pending.a.low,c.low);pending.entry=pending.side==="BUY"?pending.low:pending.high}
+   continue;
+  }
+  if(c.close>prev.high)signal("BUY",prev,c,c.time,"RANGE BREAKOUT");else if(c.close<prev.low)signal("SELL",prev,c,c.time,"RANGE BREAKDOWN");
+ }
+ if(silent||$("lowRiskSignalPanel").hidden)return;clearStrategyLines();const active=position||pending;
+ if(!active){$("lowRiskState").textContent=last;$("lowRiskState").style.color="#e7bd70";$("lowRiskEntry").textContent=$("lowRiskStop").textContent=$("lowRiskTarget").textContent="—";$("lowRiskReason").textContent="Waiting for the next confirmed range breakout."}
+ else{const buy=active.side==="BUY",filled=!!position,e=filled?position.entry:pending.entry,stop=filled?position.stop:(buy?e-risk:e+risk),target=filled?position.target:(buy?e+reward:e-reward);
+  $("lowRiskState").textContent=active.side+(filled?" · ENTRY FILLED":" · WAITING FOR RETEST");$("lowRiskState").style.color=buy?"#31d6a0":"#ff647c";$("lowRiskDot").style.background=buy?"#31d6a0":"#ff647c";
+  $("lowRiskEntry").textContent=fmt(e);$("lowRiskStop").textContent=fmt(stop);$("lowRiskTarget").textContent=fmt(target);$("lowRiskReason").textContent=filled?"Entry filled at the Dynamic Range Pro stop level. Fixed SL and target are active.":"Breakout confirmed. Waiting for price to retest the Dynamic Range Pro stop level.";
+  addStrategyLine(e,"#e7bd70",filled?"LOW RISK ENTRY":"ENTRY · RETEST",1);addStrategyLine(stop,"#ff647c","FIXED STOP LOSS");addStrategyLine(target,"#31d6a0","FIXED TARGET");addStrategyLine(buy?active.high:active.low,"#6fa9ff","ACTIVE RANGE",1)}
+ $("lowRiskFeed").innerHTML=feed.length?feed.map(x=>'<div class="feed-item"><div><span class="'+(x.label.includes("BUY")?"positive":x.label.includes("SELL")?"negative":"muted")+'">'+x.label+'</span><small>'+new Date(x.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(x.price)+'</div></div>').join(""):'<div class="feed-empty">No Low Risk setup yet.</div>';
+}
+
 function updateStructure(c){
  const highs=[],lows=[];
  for(let i=2;i<c.length-2;i++){
@@ -1160,9 +1206,11 @@ async function refreshLiquidity(reset=false){
  finally{liqBusy=false}
 }
 function showStrategy(which){
- const liq=which==="liquidity";
+ const liq=which==="liquidity",low=which==="lowrisk";
  $("classicView").hidden=liq;$("liquidityView").hidden=!liq;
- $("classicTab").classList.toggle("active",!liq);$("liquidityTab").classList.toggle("active",liq);
+ $("drpSignalPanel").hidden=low;$("lowRiskSignalPanel").hidden=!low;
+ $("classicTab").classList.toggle("active",!liq&&!low);$("lowRiskTab").classList.toggle("active",low);$("liquidityTab").classList.toggle("active",liq);
+ if(low){if(!["BTCUSD","XAUTUSD"].includes(selected))selectMarket("BTCUSD");else refreshChart()}
  if(liq){
   $("liqUpdated").textContent="Preparing chart…";
   renderLiquidityCoins();
@@ -1184,6 +1232,7 @@ function showStrategy(which){
  }
 }
 $("classicTab").addEventListener("click",()=>showStrategy("classic"));
+$("lowRiskTab").addEventListener("click",()=>showStrategy("lowrisk"));
 $("liquidityTab").addEventListener("click",()=>showStrategy("liquidity"));
  $("liqUtcMode").addEventListener("click",()=>setLiquidityDayMode("UTC"));
  $("liqIstMode").addEventListener("click",()=>setLiquidityDayMode("IST"));
@@ -1209,7 +1258,7 @@ async function scanAllMarketsAndTimeframes(){
 
 const PAGE_STATE_KEY="quantora_page_state_v1";
 function persistPageState(){
- try{sessionStorage.setItem(PAGE_STATE_KEY,JSON.stringify({view:$("liquidityView").hidden?"classic":"liquidity",journalOpen:!$("tradeJournalModal").hidden,scrollY:window.scrollY,selected,timeframe,liqSelected,liqDayMode,coin:$("historySymbolFilter")?.value||"",tf:$("historyTimeframeFilter")?.value||""}))}catch(_){}
+ try{sessionStorage.setItem(PAGE_STATE_KEY,JSON.stringify({view:!$("liquidityView").hidden?"liquidity":$("lowRiskSignalPanel").hidden?"classic":"lowrisk",journalOpen:!$("tradeJournalModal").hidden,scrollY:window.scrollY,selected,timeframe,liqSelected,liqDayMode,coin:$("historySymbolFilter")?.value||"",tf:$("historyTimeframeFilter")?.value||""}))}catch(_){}
 }
 function restorePageState(){
  try{
@@ -1221,7 +1270,7 @@ function restorePageState(){
   if(st.coin&&$("historySymbolFilter").querySelector('option[value="'+st.coin+'"]'))$("historySymbolFilter").value=st.coin;
   if(st.tf&&tfSeconds[st.tf])$("historyTimeframeFilter").value=st.tf;
   document.querySelectorAll("#timeframes [data-tf]").forEach(b=>b.classList.toggle("active",b.dataset.tf===timeframe));
-  if(st.view==="liquidity")showStrategy("liquidity");
+  if(st.view==="liquidity")showStrategy("liquidity");else if(st.view==="lowrisk")showStrategy("lowrisk");
   if(st.journalOpen){$("tradeJournalModal").hidden=false;document.body.style.overflow="hidden"}
   requestAnimationFrame(()=>window.scrollTo(0,Number(st.scrollY)||0));
  }catch(_){}
@@ -1231,7 +1280,7 @@ window.addEventListener("beforeunload",persistPageState);window.addEventListener
 window.addEventListener("scroll",()=>{if(pageStateSaveTimer)clearTimeout(pageStateSaveTimer);pageStateSaveTimer=setTimeout(persistPageState,250)},{passive:true});
 $("tradeJournalClose")?.addEventListener("click",()=>{$("tradeJournalModal").hidden=true;document.body.style.overflow="";persistPageState()});
 $("tradeJournalModal")?.addEventListener("click",e=>{if(e.target===$("tradeJournalModal")){$("tradeJournalModal").hidden=true;document.body.style.overflow="";persistPageState()}});
-$("classicTab")?.addEventListener("click",persistPageState);$("liquidityTab")?.addEventListener("click",persistPageState);
+$("classicTab")?.addEventListener("click",persistPageState);$("lowRiskTab")?.addEventListener("click",persistPageState);$("liquidityTab")?.addEventListener("click",persistPageState);
 async function start(){
  tickClock();setInterval(tickClock,1000);initChart();
  await Promise.allSettled([refreshTickers(),refreshChart()]);
