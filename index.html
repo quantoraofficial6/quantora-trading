@@ -352,6 +352,8 @@ input:focus,select:focus{
   <div class="signal-main"><div class="signal-label">CURRENT SETUP</div><div class="signal-state"><i class="signal-dot" id="lowRiskDot"></i><strong id="lowRiskState">WAIT</strong></div><div class="signal-desc" id="lowRiskReason">Waiting for a confirmed range breakout.</div></div>
   <div class="signal-grid"><div class="signal-level"><span>ENTRY LEVEL · DRP SL</span><b id="lowRiskEntry">—</b></div><div class="signal-level"><span>FIXED STOP LOSS</span><b id="lowRiskStop">—</b></div><div class="signal-level"><span>TARGET</span><b id="lowRiskTarget">—</b></div><div class="signal-level"><span>RISK / REWARD</span><b>1 : 2</b></div></div>
   <div class="strategy-note" style="display:block!important"><b>Fixed risk model</b><br>Gold: 10-point SL / 20-point target. Bitcoin: 500-point SL / 1,000-point target. Breakout signal appears first; entry waits for price to retest the Dynamic Range Pro stop level. Signals only — no live orders.</div>
+  <div style="padding:0 18px 16px"><button id="lowRiskBacktestBtn" type="button" style="width:100%;padding:12px 16px;border:1px solid #b98d4b;border-radius:9px;background:linear-gradient(135deg,#3a2b18,#1c1a18);color:#f3d49b;font-weight:800;letter-spacing:.7px;cursor:pointer">RUN 30-DAY BACKTEST</button><div id="lowRiskBacktestStatus" style="font-size:10px;color:var(--muted);margin-top:8px">Historical simulation · BTC + Gold · selected timeframe</div></div>
+  <div id="lowRiskBacktestResults" hidden style="padding:0 18px 18px"><div class="panel-head" style="padding:12px 0"><div><div class="panel-title">30-DAY BACKTEST RESULTS</div><div class="panel-caption" id="lowRiskBacktestPeriod">—</div></div></div><div id="lowRiskBacktestSummary" class="levels-row" style="padding:0;grid-template-columns:repeat(2,minmax(0,1fr))"></div><div id="lowRiskBacktestTrades" style="margin-top:12px;overflow-x:auto"></div></div>
   <div class="feed" id="lowRiskFeed"><div class="feed-empty">Waiting for a confirmed setup.</div></div>
  </aside>
 </main>
@@ -983,6 +985,81 @@ function runLowRiskStrategy(candles,silent=false,scanSymbol=selected,scanTimefra
   addStrategyLine(e,"#e7bd70",filled?"LOW RISK ENTRY":"ENTRY · RETEST",1);addStrategyLine(stop,"#ff647c","FIXED STOP LOSS");addStrategyLine(target,"#31d6a0","FIXED TARGET");addStrategyLine(buy?active.high:active.low,"#6fa9ff","ACTIVE RANGE",1)}
  $("lowRiskFeed").innerHTML=feed.length?feed.map(x=>'<div class="feed-item"><div><span class="'+(x.label.includes("BUY")?"positive":x.label.includes("SELL")?"negative":"muted")+'">'+x.label+'</span><small>'+new Date(x.time*1000).toLocaleString()+'</small></div><div class="feed-side">'+fmt(x.price)+'</div></div>').join(""):'<div class="feed-empty">No Low Risk setup yet.</div>';
 }
+
+
+function simulateLowRiskBacktest(candles,symbol){
+ const risk=symbol==="XAUTUSD"?10:500,reward=risk*2;let pending=null,position=null;
+ const trades=[];let signals=0;
+ const closeTrade=(exit,time,reason)=>{const pnl=(position.side==="BUY"?1:-1)*(exit-position.entry);trades.push({symbol,side:position.side,entry:position.entry,exit,sl:position.stop,target:position.target,pnl,entryTime:position.entryTime,exitTime:time,reason});position=null};
+ const newSignal=(side,a,b,time)=>{const hi=Math.max(a.high,b.high),lo=Math.min(a.low,b.low);pending={side,entry:side==="BUY"?lo:hi,high:hi,low:lo,a,b,time};signals++};
+ for(let i=1;i<candles.length;i++){const prev=candles[i-1],c=candles[i];
+  if(position){
+   const slHit=position.side==="BUY"?c.low<=position.stop:c.high>=position.stop;
+   const tpHit=position.side==="BUY"?c.high>=position.target:c.low<=position.target;
+   if(slHit||tpHit){closeTrade(slHit?position.stop:position.target,c.time,slHit?"STOP LOSS":"TARGET");pending=null;continue}
+   if(position.side==="BUY"&&c.close<position.low){closeTrade(c.close,c.time,"RANGE REVERSAL");const a=position?.b||prev;newSignal("SELL",a,c,c.time);continue}
+   if(position.side==="SELL"&&c.close>position.high){closeTrade(c.close,c.time,"RANGE REVERSAL");const a=position?.b||prev;newSignal("BUY",a,c,c.time);continue}
+   if(position.side==="BUY"&&c.close>position.high||position.side==="SELL"&&c.close<position.low){position.a=position.b;position.b=c;position.high=Math.max(position.a.high,c.high);position.low=Math.min(position.a.low,c.low)}
+   continue;
+  }
+  if(pending){
+   if(c.time>pending.time&&(pending.side==="BUY"?c.low<=pending.entry:c.high>=pending.entry)){
+    const e=pending.entry;position={side:pending.side,entry:e,stop:pending.side==="BUY"?e-risk:e+risk,target:pending.side==="BUY"?e+reward:e-reward,high:pending.high,low:pending.low,a:pending.a,b:pending.b,entryTime:c.time};pending=null;
+    const slHit=position.side==="BUY"?c.low<=position.stop:c.high>=position.stop,tpHit=position.side==="BUY"?c.high>=position.target:c.low<=position.target;
+    if(slHit||tpHit)closeTrade(slHit?position.stop:position.target,c.time,slHit?"STOP LOSS":"TARGET");
+    continue;
+   }
+   if(pending.side==="BUY"&&c.close<pending.low){const a=pending.a.low<=pending.b.low?pending.a:pending.b;newSignal("SELL",a,c,c.time);continue}
+   if(pending.side==="SELL"&&c.close>pending.high){const a=pending.a.high>=pending.b.high?pending.a:pending.b;newSignal("BUY",a,c,c.time);continue}
+   if(pending.side==="BUY"&&c.close>pending.high||pending.side==="SELL"&&c.close<pending.low){pending.a=pending.b;pending.b=c;pending.high=Math.max(pending.a.high,c.high);pending.low=Math.min(pending.a.low,c.low);pending.entry=pending.side==="BUY"?pending.low:pending.high}
+   continue;
+  }
+  if(c.close>prev.high)newSignal("BUY",prev,c,c.time);else if(c.close<prev.low)newSignal("SELL",prev,c,c.time);
+ }
+ return {trades,signals,open:position?1:0,pending:pending?1:0,candles:candles.length};
+}
+async function fetchLowRiskBacktestCandles(symbol,tf){
+ const sec=tfSeconds[tf],now=Math.floor(Date.now()/1000),end=Math.floor(now/sec)*sec,start=Math.floor((now-30*86400)/sec)*sec,chunk=sec*1400,gathered=[];
+ const ranges=[];for(let from=start;from<end;from+=chunk)ranges.push([from,Math.min(end,from+chunk)]);
+ for(let i=0;i<ranges.length;i+=2){
+  const batch=await Promise.all(ranges.slice(i,i+2).map(async([from,to])=>{
+   const url=API+"/v2/history/candles?resolution="+tf+"&symbol="+encodeURIComponent("MARK:"+symbol)+"&start="+from+"&end="+to;
+   const res=await fetch(url,{cache:"no-store",headers:{Accept:"application/json"}});if(!res.ok)throw Error(symbol+" history HTTP "+res.status);
+   const json=await res.json();if(json.success===false)throw Error(json.error||symbol+" candle history failed");
+   return (json.result||[]).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Object.values(c).every(Number.isFinite)&&c.time>=from&&c.time<to&&c.high>=Math.max(c.open,c.close,c.low)&&c.low<=Math.min(c.open,c.close,c.high));
+  }));batch.forEach(x=>gathered.push(...x));
+ }
+ const unique=[...new Map(gathered.sort((a,b)=>a.time-b.time).map(c=>[c.time,c])).values()];
+ if(symbol==="XAUTUSD"&&unique.some(c=>Math.max(c.open,c.high,c.low,c.close)>10000))throw Error("Gold data safety check failed.");
+ const expected=Math.floor((end-start)/sec),coverage=unique.length/expected;
+ if(coverage<0.985)throw Error(symbol+" incomplete history ("+unique.length+"/"+expected+" candles). No partial result shown.");
+ return unique.filter(c=>c.time+sec<=now);
+}
+function renderLowRiskBacktest(symbolResults,tf,start,end){
+ $("lowRiskBacktestPeriod").textContent="Last 30 days · "+tf+" · Delta Exchange historical candles";
+ const all=symbolResults.flatMap(x=>x.trades.map(t=>({...t}))),wins=all.filter(t=>t.pnl>0),losses=all.filter(t=>t.pnl<0),netBy=symbolResults.map(x=>({symbol:x.symbol,net:x.trades.reduce((a,t)=>a+t.pnl,0)}));
+ const summary=[["TOTAL TRADES",all.length],["WIN / LOSS",wins.length+" / "+losses.length],["NET BTC PTS",fmt(netBy.find(x=>x.symbol==="BTCUSD")?.net||0)],["NET GOLD PTS",fmt(netBy.find(x=>x.symbol==="XAUTUSD")?.net||0)],["COMBINED NET",fmt(all.reduce((a,t)=>a+t.pnl,0))],["WIN RATE",all.length?(wins.length/all.length*100).toFixed(1)+"%":"—"]];
+ $("lowRiskBacktestSummary").innerHTML=summary.map(([k,v])=>'<div class="metric"><span>'+k+'</span><b>'+v+'</b></div>').join("");
+ const rows=all.sort((a,b)=>b.exitTime-a.exitTime);
+ $("lowRiskBacktestTrades").innerHTML='<table style="width:100%;border-collapse:collapse;font-size:10px;min-width:540px"><thead><tr>'+["COIN","SIDE","ENTRY","EXIT","P/L POINTS","EXIT REASON"].map(x=>'<th style="text-align:left;padding:9px 6px;color:var(--muted);border-bottom:1px solid #26364b">'+x+'</th>').join("")+'</tr></thead><tbody>'+rows.map(t=>'<tr><td style="padding:9px 6px;border-bottom:1px solid #1b293b">'+t.symbol+'</td><td style="padding:9px 6px;color:'+(t.side==="BUY"?"#31d6a0":"#ff647c")+'">'+t.side+'</td><td style="padding:9px 6px">'+fmt(t.entry)+'</td><td style="padding:9px 6px">'+fmt(t.exit)+'</td><td style="padding:9px 6px;color:'+(t.pnl>=0?"#31d6a0":"#ff647c")+'">'+(t.pnl>0?"+":"")+fmt(t.pnl)+'</td><td style="padding:9px 6px">'+t.reason+'</td></tr>').join("")+'</tbody></table>'+(!rows.length?'<div class="feed-empty">No completed trades in this 30-day period.</div>':"")+'<div style="font-size:9px;color:var(--muted);padding-top:9px">Open/pending setups at the end of the test are excluded. P/L is shown in raw price points, before fees, slippage and funding.</div>';
+ $("lowRiskBacktestResults").hidden=false;
+}
+async function runLowRiskBacktest(){
+ const btn=$("lowRiskBacktestBtn"),status=$("lowRiskBacktestStatus"),tf=timeframe;
+ btn.disabled=true;btn.textContent="RUNNING BACKTEST…";status.textContent="Downloading 30 days of historical candles for Bitcoin and Gold ("+tf+")…";$("lowRiskBacktestResults").hidden=true;
+ try{
+  const results=[];
+  for(const symbol of ["BTCUSD","XAUTUSD"]){
+   status.textContent="Processing "+symbol+" · "+tf+" historical candles…";
+   const candles=await fetchLowRiskBacktestCandles(symbol,tf);
+   const sim=simulateLowRiskBacktest(candles,symbol);results.push({symbol,...sim});
+  }
+  renderLowRiskBacktest(results,tf,Date.now()-30*86400000,Date.now());
+  status.textContent="Completed successfully · BTC + Gold · "+tf+" · "+results.reduce((a,x)=>a+x.candles,0).toLocaleString()+" candles processed.";
+ }catch(e){status.textContent="Backtest failed: "+e.message;console.error("Low Risk 30-day backtest:",e)}
+ finally{btn.disabled=false;btn.textContent="RUN 30-DAY BACKTEST"}
+}
+$("lowRiskBacktestBtn")?.addEventListener("click",runLowRiskBacktest);
 
 function updateStructure(c){
  const highs=[],lows=[];
