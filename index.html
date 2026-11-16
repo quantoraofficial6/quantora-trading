@@ -352,7 +352,7 @@ input:focus,select:focus{
   <div class="signal-main"><div class="signal-label">CURRENT SETUP</div><div class="signal-state"><i class="signal-dot" id="lowRiskDot"></i><strong id="lowRiskState">WAIT</strong></div><div class="signal-desc" id="lowRiskReason">Waiting for a confirmed range breakout.</div></div>
   <div class="signal-grid"><div class="signal-level"><span>ENTRY LEVEL · DRP SL</span><b id="lowRiskEntry">—</b></div><div class="signal-level"><span>FIXED STOP LOSS</span><b id="lowRiskStop">—</b></div><div class="signal-level"><span>TARGET</span><b id="lowRiskTarget">—</b></div><div class="signal-level"><span>RISK / REWARD</span><b>1 : 2</b></div></div>
   <div class="strategy-note" style="display:block!important"><b>Fixed risk model</b><br>Gold: 10-point SL / 20-point target. Bitcoin: 500-point SL / 1,000-point target. Breakout signal appears first; entry waits for price to retest the Dynamic Range Pro stop level. Signals only — no live orders.</div>
-  <div style="padding:0 18px 16px"><button id="lowRiskBacktestBtn" type="button" style="width:100%;padding:12px 16px;border:1px solid #b98d4b;border-radius:9px;background:linear-gradient(135deg,#3a2b18,#1c1a18);color:#f3d49b;font-weight:800;letter-spacing:.7px;cursor:pointer">RUN ALL-TIMEFRAME BACKTEST</button><div id="lowRiskBacktestStatus" style="font-size:10px;color:var(--muted);margin-top:8px">Historical simulation · BTC + Gold · all 7 timeframes</div></div>
+  <div style="padding:0 18px 16px"><div class="panel-title" style="margin:4px 0 10px">LIVE MULTI-TIMEFRAME SIGNALS</div><div class="panel-caption" style="margin-bottom:10px">BTC + GOLD · ALL 7 TIMEFRAMES · INDEPENDENT SCANS</div><div id="lowRiskMultiTfStatus" class="panel-caption" style="margin-bottom:10px">Preparing 14 live scans…</div><div id="lowRiskMultiTfGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px"><div class="feed-empty">Loading BTC and Gold across all timeframes…</div></div></div>\n  <div style="padding:0 18px 16px"><button id="lowRiskBacktestBtn" type="button" style="width:100%;padding:12px 16px;border:1px solid #b98d4b;border-radius:9px;background:linear-gradient(135deg,#3a2b18,#1c1a18);color:#f3d49b;font-weight:800;letter-spacing:.7px;cursor:pointer">RUN ALL-TIMEFRAME BACKTEST</button><div id="lowRiskBacktestStatus" style="font-size:10px;color:var(--muted);margin-top:8px">Historical simulation · BTC + Gold · all 7 timeframes</div></div>
   <div id="lowRiskBacktestResults" hidden style="padding:0 18px 18px"><div class="panel-head" style="padding:12px 0"><div><div class="panel-title">30-DAY BACKTEST RESULTS</div><div class="panel-caption" id="lowRiskBacktestPeriod">—</div></div></div><div id="lowRiskBacktestSummary" class="levels-row" style="padding:0;grid-template-columns:repeat(2,minmax(0,1fr))"></div><div id="lowRiskBacktestTrades" style="margin-top:12px;overflow-x:auto"></div></div>
   <div class="feed" id="lowRiskFeed"><div class="feed-empty">Waiting for a confirmed setup.</div></div>
  </aside>
@@ -977,7 +977,7 @@ function runLowRiskStrategy(candles,silent=false,scanSymbol=selected,scanTimefra
   }
   if(c.close>prev.high)signal("BUY",prev,c,c.time,"RANGE BREAKOUT");else if(c.close<prev.low)signal("SELL",prev,c,c.time,"RANGE BREAKDOWN");
  }
- if(silent||$("lowRiskSignalPanel").hidden)return;clearStrategyLines();const active=position||pending;
+ const active=position||pending;const snapshot={symbol:scanSymbol,timeframe:scanTimeframe,status:position?position.side+" · ENTRY FILLED":pending?pending.side+" · WAITING FOR RETEST":last,side:active?.side||"",entry:position?.entry??pending?.entry??null,stop:position?.stop??(pending?(pending.side==="BUY"?pending.entry-risk:pending.entry+risk):null),target:position?.target??(pending?(pending.side==="BUY"?pending.entry+reward:pending.entry-reward):null),filled:!!position,lastTime:feed[0]?.time||candles[candles.length-1]?.time||0,lastPrice:feed[0]?.price??null};if(silent)return snapshot;if($("lowRiskSignalPanel").hidden)return snapshot;clearStrategyLines();
  if(!active){$("lowRiskState").textContent=last;$("lowRiskState").style.color="#e7bd70";$("lowRiskEntry").textContent=$("lowRiskStop").textContent=$("lowRiskTarget").textContent="—";$("lowRiskReason").textContent="Waiting for the next confirmed range breakout."}
  else{const buy=active.side==="BUY",filled=!!position,e=filled?position.entry:pending.entry,stop=filled?position.stop:(buy?e-risk:e+risk),target=filled?position.target:(buy?e+reward:e-reward);
   $("lowRiskState").textContent=active.side+(filled?" · ENTRY FILLED":" · WAITING FOR RETEST");$("lowRiskState").style.color=buy?"#31d6a0":"#ff647c";$("lowRiskDot").style.background=buy?"#31d6a0":"#ff647c";
@@ -1306,7 +1306,7 @@ function showStrategy(which){
  $("classicView").hidden=liq;$("liquidityView").hidden=!liq;
  $("drpSignalPanel").hidden=low;$("lowRiskSignalPanel").hidden=!low;
  $("classicTab").classList.toggle("active",!liq&&!low);$("lowRiskTab").classList.toggle("active",low);$("liquidityTab").classList.toggle("active",liq);
- if(low){if(!["BTCUSD","XAUTUSD"].includes(selected))selectMarket("BTCUSD");else refreshChart()}else if(!liq)refreshChart();
+ if(low){if(!["BTCUSD","XAUTUSD"].includes(selected))selectMarket("BTCUSD");else refreshChart();startLowRiskMultiTfScan()}else if(lowRiskMultiScanTimer){clearInterval(lowRiskMultiScanTimer);lowRiskMultiScanTimer=null}else if(!liq)refreshChart();
  if(liq){
   $("liqUpdated").textContent="Preparing chart…";
   renderLiquidityCoins();
@@ -1333,6 +1333,45 @@ $("liquidityTab").addEventListener("click",()=>showStrategy("liquidity"));
  $("liqUtcMode").addEventListener("click",()=>setLiquidityDayMode("UTC"));
  $("liqIstMode").addEventListener("click",()=>setLiquidityDayMode("IST"));
 
+let lowRiskMultiScanBusy=false,lowRiskMultiScanTimer=null;
+const lowRiskScanPairs=["BTCUSD","XAUTUSD"].flatMap(symbol=>Object.keys(tfSeconds).map(tf=>({symbol,tf})));
+function renderLowRiskMultiTf(results){
+ const html=results.map(r=>{
+  const ok=!r.error&&r.snapshot,st=ok?r.snapshot:null,side=st?.side||"";
+  const tone=side==="BUY"?"#31d6a0":side==="SELL"?"#ff647c":"#e7bd70";
+  const val=x=>x==null?"—":fmt(x);
+  return '<div style="border:1px solid #26364b;border-radius:9px;padding:10px;background:rgba(255,255,255,.02);min-width:0"><div style="display:flex;justify-content:space-between;gap:6px"><b style="font-size:11px">'+r.symbol+'</b><span style="font-size:10px;color:var(--muted)">'+r.tf.toUpperCase()+'</span></div><div style="font-size:11px;font-weight:800;color:'+(r.error?"#ff9a9a":tone)+';margin:9px 0 7px">'+(r.error?"SCAN ERROR":(st?.status||"WAIT"))+'</div><div style="font-size:10px;color:var(--muted);line-height:1.7">ENTRY '+val(st?.entry)+'<br>SL '+val(st?.stop)+'<br>TP '+val(st?.target)+'</div>'+(r.error?'<div style="font-size:9px;color:#ff9a9a;margin-top:5px">'+String(r.error).slice(0,90)+'</div>':'')+'</div>';
+ }).join("");
+ $("lowRiskMultiTfGrid").innerHTML=html;
+ const failed=results.filter(x=>x.error).length;
+ $("lowRiskMultiTfStatus").textContent="Last scan "+new Date().toLocaleTimeString()+" · "+(14-failed)+"/14 active · "+failed+" errors · Refreshes every 30 sec";
+}
+async function scanLowRiskAllTimeframes(){
+ if(lowRiskMultiScanBusy||$("lowRiskSignalPanel").hidden)return;
+ lowRiskMultiScanBusy=true;
+ try{
+  const results=[];
+  for(let i=0;i<lowRiskScanPairs.length;i+=4){
+   const batch=await Promise.all(lowRiskScanPairs.slice(i,i+4).map(async p=>{
+    try{
+     const candles=await fetchCandlesFor(p.symbol,p.tf,1500);
+     const sec=tfSeconds[p.tf],now=Math.floor(Date.now()/1000);
+     const closed=candles.filter(c=>c.time+sec<=now);
+     if(closed.length<2)throw Error("Not enough closed candles");
+     const snapshot=runLowRiskStrategy(closed,true,p.symbol,p.tf);
+     return {...p,snapshot};
+    }catch(e){return {...p,error:e.message||String(e)}}
+   }));
+   results.push(...batch);
+  }
+  if(!$("lowRiskSignalPanel").hidden)renderLowRiskMultiTf(results);
+ }finally{lowRiskMultiScanBusy=false}
+}
+function startLowRiskMultiTfScan(){
+ if(lowRiskMultiScanTimer)clearInterval(lowRiskMultiScanTimer);
+ scanLowRiskAllTimeframes();
+ lowRiskMultiScanTimer=setInterval(scanLowRiskAllTimeframes,30000);
+}
 function tickClock(){$("clock").textContent=new Date().toLocaleTimeString()}
 $("refreshPrices")?.addEventListener("click",()=>refreshTickers());
 
