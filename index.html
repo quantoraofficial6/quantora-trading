@@ -352,7 +352,7 @@ input:focus,select:focus{
   <div class="signal-main"><div class="signal-label">CURRENT SETUP</div><div class="signal-state"><i class="signal-dot" id="lowRiskDot"></i><strong id="lowRiskState">WAIT</strong></div><div class="signal-desc" id="lowRiskReason">Waiting for a confirmed range breakout.</div></div>
   <div class="signal-grid"><div class="signal-level"><span>ENTRY LEVEL · DRP SL</span><b id="lowRiskEntry">—</b></div><div class="signal-level"><span>FIXED STOP LOSS</span><b id="lowRiskStop">—</b></div><div class="signal-level"><span>TARGET</span><b id="lowRiskTarget">—</b></div><div class="signal-level"><span>RISK / REWARD</span><b>1 : 2</b></div></div>
   <div class="strategy-note" style="display:block!important"><b>Fixed risk model</b><br>Gold: 10-point SL / 20-point target. Bitcoin: 500-point SL / 1,000-point target. Breakout signal appears first; entry waits for price to retest the Dynamic Range Pro stop level. Signals only — no live orders.</div>
-  <div style="padding:0 18px 16px"><button id="lowRiskBacktestBtn" type="button" style="width:100%;padding:12px 16px;border:1px solid #b98d4b;border-radius:9px;background:linear-gradient(135deg,#3a2b18,#1c1a18);color:#f3d49b;font-weight:800;letter-spacing:.7px;cursor:pointer">RUN 30-DAY BACKTEST</button><div id="lowRiskBacktestStatus" style="font-size:10px;color:var(--muted);margin-top:8px">Historical simulation · BTC + Gold · selected timeframe</div></div>
+  <div style="padding:0 18px 16px"><button id="lowRiskBacktestBtn" type="button" style="width:100%;padding:12px 16px;border:1px solid #b98d4b;border-radius:9px;background:linear-gradient(135deg,#3a2b18,#1c1a18);color:#f3d49b;font-weight:800;letter-spacing:.7px;cursor:pointer">RUN ALL-TIMEFRAME BACKTEST</button><div id="lowRiskBacktestStatus" style="font-size:10px;color:var(--muted);margin-top:8px">Historical simulation · BTC + Gold · all 7 timeframes</div></div>
   <div id="lowRiskBacktestResults" hidden style="padding:0 18px 18px"><div class="panel-head" style="padding:12px 0"><div><div class="panel-title">30-DAY BACKTEST RESULTS</div><div class="panel-caption" id="lowRiskBacktestPeriod">—</div></div></div><div id="lowRiskBacktestSummary" class="levels-row" style="padding:0;grid-template-columns:repeat(2,minmax(0,1fr))"></div><div id="lowRiskBacktestTrades" style="margin-top:12px;overflow-x:auto"></div></div>
   <div class="feed" id="lowRiskFeed"><div class="feed-empty">Waiting for a confirmed setup.</div></div>
  </aside>
@@ -1035,29 +1035,48 @@ async function fetchLowRiskBacktestCandles(symbol,tf){
  if(coverage<0.985)throw Error(symbol+" incomplete history ("+unique.length+"/"+expected+" candles). No partial result shown.");
  return unique.filter(c=>c.time+sec<=now);
 }
-function renderLowRiskBacktest(symbolResults,tf,start,end){
- $("lowRiskBacktestPeriod").textContent="Last 30 days · "+tf+" · Delta Exchange historical candles";
- const all=symbolResults.flatMap(x=>x.trades.map(t=>({...t}))),wins=all.filter(t=>t.pnl>0),losses=all.filter(t=>t.pnl<0),netBy=symbolResults.map(x=>({symbol:x.symbol,net:x.trades.reduce((a,t)=>a+t.pnl,0)}));
- const btc=all.filter(t=>t.symbol==="BTCUSD"),gold=all.filter(t=>t.symbol==="XAUTUSD"),summary=[["TOTAL TRADES",all.length],["WIN / LOSS",wins.length+" / "+losses.length],["BTC NET PTS",fmt(netBy.find(x=>x.symbol==="BTCUSD")?.net||0)],["GOLD NET PTS",fmt(netBy.find(x=>x.symbol==="XAUTUSD")?.net||0)],["BTC WIN RATE",btc.length?(btc.filter(t=>t.pnl>0).length/btc.length*100).toFixed(1)+"%":"—"],["GOLD WIN RATE",gold.length?(gold.filter(t=>t.pnl>0).length/gold.length*100).toFixed(1)+"%":"—"]];
- $("lowRiskBacktestSummary").innerHTML=summary.map(([k,v])=>'<div class="metric"><span>'+k+'</span><b>'+v+'</b></div>').join("");
- const rows=all.sort((a,b)=>b.exitTime-a.exitTime);
- $("lowRiskBacktestTrades").innerHTML='<table style="width:100%;border-collapse:collapse;font-size:10px;min-width:540px"><thead><tr>'+["COIN","SIDE","ENTRY","EXIT","P/L POINTS","EXIT REASON"].map(x=>'<th style="text-align:left;padding:9px 6px;color:var(--muted);border-bottom:1px solid #26364b">'+x+'</th>').join("")+'</tr></thead><tbody>'+rows.map(t=>'<tr><td style="padding:9px 6px;border-bottom:1px solid #1b293b">'+t.symbol+'</td><td style="padding:9px 6px;color:'+(t.side==="BUY"?"#31d6a0":"#ff647c")+'">'+t.side+'</td><td style="padding:9px 6px">'+fmt(t.entry)+'</td><td style="padding:9px 6px">'+fmt(t.exit)+'</td><td style="padding:9px 6px;color:'+(t.pnl>=0?"#31d6a0":"#ff647c")+'">'+(t.pnl>0?"+":"")+fmt(t.pnl)+'</td><td style="padding:9px 6px">'+t.reason+'</td></tr>').join("")+'</tbody></table>'+(!rows.length?'<div class="feed-empty">No completed trades in this 30-day period.</div>':"")+'<div style="font-size:9px;color:var(--muted);padding-top:9px">Open/pending setups at the end of the test are excluded. P/L is shown in raw price points, before fees, slippage and funding.</div>';
+function renderLowRiskBacktest(timeframeResults,start,end){
+ const tfOrder=["1m","5m","15m","1h","2h","4h","1d"];
+ const tfLabels={"1m":"1 MIN","5m":"5 MIN","15m":"15 MIN","1h":"1 HOUR","2h":"2 HOURS","4h":"4 HOURS","1d":"1 DAY"};
+ const html=timeframeResults.map(group=>{
+  const valid=group.results.filter(x=>!x.error),all=valid.flatMap(x=>x.trades.map(t=>({...t})));
+  const total=all.length,wins=all.filter(t=>t.pnl>0),losses=all.filter(t=>t.pnl<0);
+  const coinStats=["BTCUSD","XAUTUSD"].map(symbol=>{
+   const r=valid.find(x=>x.symbol===symbol),trades=r?.trades||[],w=trades.filter(t=>t.pnl>0);
+   return {symbol,r,trades,net:trades.reduce((a,t)=>a+t.pnl,0),wr:trades.length?(w.length/trades.length*100).toFixed(1)+"%":"—"};
+  });
+  const stats=coinStats.map(x=>'<div class="metric"><span>'+x.symbol+' · NET POINTS</span><b>'+fmt(x.net)+'</b></div><div class="metric"><span>'+x.symbol+' · WIN RATE</span><b>'+x.wr+'</b></div><div class="metric"><span>'+x.symbol+' · TRADES</span><b>'+(x.r?x.trades.length:"FAILED")+'</b></div>').join("");
+  const errors=group.results.filter(x=>x.error).map(x=>'<div style="font-size:10px;color:#ff9a9a;padding:5px 0">'+x.symbol+': '+x.error+'</div>').join("");
+  const rows=all.sort((a,b)=>b.exitTime-a.exitTime);
+  const table='<div style="overflow-x:auto;margin-top:10px"><table style="width:100%;border-collapse:collapse;font-size:10px;min-width:540px"><thead><tr>'+["COIN","SIDE","ENTRY","EXIT","P/L POINTS","EXIT REASON"].map(x=>'<th style="text-align:left;padding:9px 6px;color:var(--muted);border-bottom:1px solid #26364b">'+x+'</th>').join("")+'</tr></thead><tbody>'+rows.map(t=>'<tr><td style="padding:9px 6px;border-bottom:1px solid #1b293b">'+t.symbol+'</td><td style="padding:9px 6px;color:'+(t.side==="BUY"?"#31d6a0":"#ff647c")+'">'+t.side+'</td><td style="padding:9px 6px">'+fmt(t.entry)+'</td><td style="padding:9px 6px">'+fmt(t.exit)+'</td><td style="padding:9px 6px;color:'+(t.pnl>=0?"#31d6a0":"#ff647c")+'">'+(t.pnl>0?"+":"")+fmt(t.pnl)+'</td><td style="padding:9px 6px">'+t.reason+'</td></tr>').join("")+'</tbody></table></div>'+(!rows.length?'<div class="feed-empty">No completed trades in this timeframe.</div>':"");
+  return '<details open style="border:1px solid #26364b;border-radius:10px;padding:10px;margin:10px 0"><summary style="cursor:pointer;font-weight:800;color:#e7bd70">'+tfLabels[group.tf]+' · '+total+' COMPLETED TRADES · '+wins.length+' W / '+losses.length+' L</summary><div class="levels-row" style="padding:10px 0;grid-template-columns:repeat(2,minmax(0,1fr))">'+stats+'</div>'+errors+table+'</details>';
+ }).join("");
+ $("lowRiskBacktestPeriod").textContent="Last 30 days · All 7 timeframes · BTC + Gold · Delta Exchange";
+ $("lowRiskBacktestSummary").innerHTML='<div class="metric"><span>TIMEFRAMES</span><b>'+timeframeResults.length+' / 7</b></div><div class="metric"><span>COIN TESTS</span><b>'+timeframeResults.reduce((n,g)=>n+g.results.length,0)+' / 14</b></div><div class="metric"><span>COMPLETED TRADES</span><b>'+timeframeResults.reduce((n,g)=>n+g.results.reduce((m,x)=>m+(x.trades?.length||0),0),0)+'</b></div><div class="metric"><span>FAILED TESTS</span><b>'+timeframeResults.reduce((n,g)=>n+g.results.filter(x=>x.error).length,0)+'</b></div>';
+ $("lowRiskBacktestTrades").innerHTML=html+'<div style="font-size:9px;color:var(--muted);padding-top:9px">Open/pending setups at the end of each test are excluded. P/L is raw price points before fees, slippage and funding. BTC and Gold points are reported separately and must not be added together.</div>';
  $("lowRiskBacktestResults").hidden=false;
 }
 async function runLowRiskBacktest(){
- const btn=$("lowRiskBacktestBtn"),status=$("lowRiskBacktestStatus"),tf=timeframe;
- btn.disabled=true;btn.textContent="RUNNING BACKTEST…";status.textContent="Downloading 30 days of historical candles for Bitcoin and Gold ("+tf+")…";$("lowRiskBacktestResults").hidden=true;
+ const btn=$("lowRiskBacktestBtn"),status=$("lowRiskBacktestStatus");
+ const timeframes=["1m","5m","15m","1h","2h","4h","1d"],symbols=["BTCUSD","XAUTUSD"],results=[];
+ btn.disabled=true;btn.textContent="RUNNING 14 BACKTESTS…";status.textContent="Starting 30-day backtests across all 7 timeframes for BTC and Gold…";$("lowRiskBacktestResults").hidden=true;
  try{
-  const results=[];
-  for(const symbol of ["BTCUSD","XAUTUSD"]){
-   status.textContent="Processing "+symbol+" · "+tf+" historical candles…";
-   const candles=await fetchLowRiskBacktestCandles(symbol,tf);
-   const sim=simulateLowRiskBacktest(candles,symbol);results.push({symbol,...sim});
+  for(const tf of timeframes){
+   const group={tf,results:[]};
+   for(const symbol of symbols){
+    status.textContent="Processing "+symbol+" · "+tf+" · 30 days ("+(results.reduce((n,g)=>n+g.results.length,0)+group.results.length+1)+"/14)…";
+    try{
+     const candles=await fetchLowRiskBacktestCandles(symbol,tf);
+     const sim=simulateLowRiskBacktest(candles,symbol);group.results.push({symbol,...sim});
+    }catch(e){group.results.push({symbol,error:e.message,trades:[]});}
+   }
+   results.push(group);
+   renderLowRiskBacktest(results,Date.now()-30*86400000,Date.now());
   }
-  renderLowRiskBacktest(results,tf,Date.now()-30*86400000,Date.now());
-  status.textContent="Completed successfully · BTC + Gold · "+tf+" · "+results.reduce((a,x)=>a+x.candles,0).toLocaleString()+" candles processed.";
- }catch(e){status.textContent="Backtest failed: "+e.message;console.error("Low Risk 30-day backtest:",e)}
- finally{btn.disabled=false;btn.textContent="RUN 30-DAY BACKTEST"}
+  const failed=results.reduce((n,g)=>n+g.results.filter(x=>x.error).length,0);
+  status.textContent=failed?"Finished with "+failed+" failed coin/timeframe tests. Check the timeframe details below.":"Completed · all 14 tests · 7 timeframes · BTC + Gold.";
+ }catch(e){status.textContent="Backtest failed: "+e.message;console.error("Low Risk all-timeframe backtest:",e)}
+ finally{btn.disabled=false;btn.textContent="RUN ALL-TIMEFRAME BACKTEST"}
 }
 $("lowRiskBacktestBtn")?.addEventListener("click",runLowRiskBacktest);
 
