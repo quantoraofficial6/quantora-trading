@@ -997,8 +997,8 @@ function simulateLowRiskBacktest(candles,symbol){
    const slHit=position.side==="BUY"?c.low<=position.stop:c.high>=position.stop;
    const tpHit=position.side==="BUY"?c.high>=position.target:c.low<=position.target;
    if(slHit||tpHit){closeTrade(slHit?position.stop:position.target,c.time,slHit?"STOP LOSS":"TARGET");pending=null;continue}
-   if(position.side==="BUY"&&c.close<position.low){closeTrade(c.close,c.time,"RANGE REVERSAL");const a=position?.b||prev;newSignal("SELL",a,c,c.time);continue}
-   if(position.side==="SELL"&&c.close>position.high){closeTrade(c.close,c.time,"RANGE REVERSAL");const a=position?.b||prev;newSignal("BUY",a,c,c.time);continue}
+   if(position.side==="BUY"&&c.close<position.low){const a=position.a.low<=position.b.low?position.a:position.b;closeTrade(c.close,c.time,"RANGE REVERSAL");newSignal("SELL",a,c,c.time);continue}
+   if(position.side==="SELL"&&c.close>position.high){const a=position.a.high>=position.b.high?position.a:position.b;closeTrade(c.close,c.time,"RANGE REVERSAL");newSignal("BUY",a,c,c.time);continue}
    if(position.side==="BUY"&&c.close>position.high||position.side==="SELL"&&c.close<position.low){position.a=position.b;position.b=c;position.high=Math.max(position.a.high,c.high);position.low=Math.min(position.a.low,c.low)}
    continue;
   }
@@ -1038,7 +1038,7 @@ async function fetchLowRiskBacktestCandles(symbol,tf){
 function renderLowRiskBacktest(symbolResults,tf,start,end){
  $("lowRiskBacktestPeriod").textContent="Last 30 days · "+tf+" · Delta Exchange historical candles";
  const all=symbolResults.flatMap(x=>x.trades.map(t=>({...t}))),wins=all.filter(t=>t.pnl>0),losses=all.filter(t=>t.pnl<0),netBy=symbolResults.map(x=>({symbol:x.symbol,net:x.trades.reduce((a,t)=>a+t.pnl,0)}));
- const summary=[["TOTAL TRADES",all.length],["WIN / LOSS",wins.length+" / "+losses.length],["NET BTC PTS",fmt(netBy.find(x=>x.symbol==="BTCUSD")?.net||0)],["NET GOLD PTS",fmt(netBy.find(x=>x.symbol==="XAUTUSD")?.net||0)],["COMBINED NET",fmt(all.reduce((a,t)=>a+t.pnl,0))],["WIN RATE",all.length?(wins.length/all.length*100).toFixed(1)+"%":"—"]];
+ const btc=all.filter(t=>t.symbol==="BTCUSD"),gold=all.filter(t=>t.symbol==="XAUTUSD"),summary=[["TOTAL TRADES",all.length],["WIN / LOSS",wins.length+" / "+losses.length],["BTC NET PTS",fmt(netBy.find(x=>x.symbol==="BTCUSD")?.net||0)],["GOLD NET PTS",fmt(netBy.find(x=>x.symbol==="XAUTUSD")?.net||0)],["BTC WIN RATE",btc.length?(btc.filter(t=>t.pnl>0).length/btc.length*100).toFixed(1)+"%":"—"],["GOLD WIN RATE",gold.length?(gold.filter(t=>t.pnl>0).length/gold.length*100).toFixed(1)+"%":"—"]];
  $("lowRiskBacktestSummary").innerHTML=summary.map(([k,v])=>'<div class="metric"><span>'+k+'</span><b>'+v+'</b></div>').join("");
  const rows=all.sort((a,b)=>b.exitTime-a.exitTime);
  $("lowRiskBacktestTrades").innerHTML='<table style="width:100%;border-collapse:collapse;font-size:10px;min-width:540px"><thead><tr>'+["COIN","SIDE","ENTRY","EXIT","P/L POINTS","EXIT REASON"].map(x=>'<th style="text-align:left;padding:9px 6px;color:var(--muted);border-bottom:1px solid #26364b">'+x+'</th>').join("")+'</tr></thead><tbody>'+rows.map(t=>'<tr><td style="padding:9px 6px;border-bottom:1px solid #1b293b">'+t.symbol+'</td><td style="padding:9px 6px;color:'+(t.side==="BUY"?"#31d6a0":"#ff647c")+'">'+t.side+'</td><td style="padding:9px 6px">'+fmt(t.entry)+'</td><td style="padding:9px 6px">'+fmt(t.exit)+'</td><td style="padding:9px 6px;color:'+(t.pnl>=0?"#31d6a0":"#ff647c")+'">'+(t.pnl>0?"+":"")+fmt(t.pnl)+'</td><td style="padding:9px 6px">'+t.reason+'</td></tr>').join("")+'</tbody></table>'+(!rows.length?'<div class="feed-empty">No completed trades in this 30-day period.</div>':"")+'<div style="font-size:9px;color:var(--muted);padding-top:9px">Open/pending setups at the end of the test are excluded. P/L is shown in raw price points, before fees, slippage and funding.</div>';
