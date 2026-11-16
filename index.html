@@ -994,7 +994,7 @@ function updateStructure(c){
  const s=lows.filter(x=>x<=price).sort((a,b)=>b-a)[0],r=highs.filter(x=>x>=price).sort((a,b)=>a-b)[0];
  $("support").textContent=s?fmt(s):"—";$("resistance").textContent=r?fmt(r):"—";$("swingLows").textContent=lows.length;$("swingHighs").textContent=highs.length;
 }
-async function selectMarket(s){selected=s;chartHasFit=false;renderMarkets();$("chartSymbol").textContent=s;$("chartUpdated").textContent="Loading "+s+"…";await refreshTickers();await refreshChart();const d=marketData[s];if(d)$("chartPrice").textContent=fmt(d.price)}
+async function selectMarket(s){if(!$("lowRiskSignalPanel").hidden&&!["BTCUSD","XAUTUSD"].includes(s)){ $("lowRiskState").textContent="BTC / GOLD ONLY";$("lowRiskEntry").textContent=$("lowRiskStop").textContent=$("lowRiskTarget").textContent="—";$("lowRiskReason").textContent="Low Risk strategy is available only for Bitcoin and Gold.";return;}selected=s;chartHasFit=false;renderMarkets();$("chartSymbol").textContent=s;$("chartUpdated").textContent="Loading "+s+"…";await refreshTickers();await refreshChart();const d=marketData[s];if(d)$("chartPrice").textContent=fmt(d.price)}
 document.querySelectorAll(".tf").forEach(b=>b.addEventListener("click",()=>{timeframe=b.dataset.tf;chartHasFit=false;document.querySelectorAll(".tf").forEach(x=>x.classList.toggle("active",x===b));refreshChart()}));
 
 // ---------------- LIQUIDITY SWEEP: previous-day levels, 15-minute candles only ----------------
@@ -1210,7 +1210,7 @@ function showStrategy(which){
  $("classicView").hidden=liq;$("liquidityView").hidden=!liq;
  $("drpSignalPanel").hidden=low;$("lowRiskSignalPanel").hidden=!low;
  $("classicTab").classList.toggle("active",!liq&&!low);$("lowRiskTab").classList.toggle("active",low);$("liquidityTab").classList.toggle("active",liq);
- if(low){if(!["BTCUSD","XAUTUSD"].includes(selected))selectMarket("BTCUSD");else refreshChart()}
+ if(low){if(!["BTCUSD","XAUTUSD"].includes(selected))selectMarket("BTCUSD");else refreshChart()}else if(!liq)refreshChart();
  if(liq){
   $("liqUpdated").textContent="Preparing chart…";
   renderLiquidityCoins();
